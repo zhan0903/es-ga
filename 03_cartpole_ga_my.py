@@ -10,7 +10,7 @@ import torch.nn as nn
 from tensorboardX import SummaryWriter
 
 NOISE_STD = 0.01
-POPULATION_SIZE = 1000
+POPULATION_SIZE = 12
 PARENTS_COUNT = 10
 
 
@@ -54,7 +54,8 @@ def evaluate(env, net):
         obs_v = torch.FloatTensor(batch_obs)
         act_prob = net(obs_v)
         acts = act_prob.max(dim=1)[1]
-        obs, r, done, _ = env.step(acts.data.numpy()[0])
+        act = acts.data.numpy()[0]
+        obs, r, done, _ = env.step(act)#acts.data.numpy()[0])
         reward += r
         if done:
             break
@@ -87,6 +88,7 @@ if __name__ == "__main__":
         for net in nets
     ]
     while True:
+        #print(population)
         population.sort(key=lambda p: p[1], reverse=True)
         rewards = [p[1] for p in population[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
