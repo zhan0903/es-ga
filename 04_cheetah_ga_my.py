@@ -7,6 +7,7 @@ import collections
 import copy
 import time
 import numpy as np
+import argparse
 
 import torch
 import torch.nn as nn
@@ -54,12 +55,12 @@ class Net(nn.Module):
         return self.fc(conv_out)
 
 
-def evaluate(env, net):
+def evaluate(env, net,device):
     obs = env.reset()
     reward = 0.0
     steps = 0
     while True:
-        obs_v = torch.FloatTensor([np.array(obs, copy=False)])
+        obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
         act_prob = net(obs_v)
         acts = act_prob.max(dim=1)[1]
         obs, r, done, _ = env.step(acts.data.numpy()[0])
@@ -74,14 +75,14 @@ def mutate_net(net, seed, copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
-        noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32))
+        noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
         p.data += NOISE_STD * noise_t
     return new_net
 
 
-def build_net(env, seeds):
+def build_net(env, seeds, device):
     torch.manual_seed(seeds[0])
-    net = Net(env.observation_space.shape, env.action_space.n)
+    net = Net(env.observation_space.shape, env.action_space.n).to(device)
     for seed in seeds[1:]:
         net = mutate_net(net, seed, copy_net=False)
     return net
@@ -94,7 +95,7 @@ def make_env():
     return ptan.common.wrappers.wrap_dqn(gym.make("PongNoFrameskip-v4"))
 
 
-def worker_func(input_queue, output_queue):
+def worker_func(input_queue, output_queue,device):
     env = make_env()#gym.make("RoboschoolHalfCheetah-v1")
     cache = {}
 
@@ -109,9 +110,9 @@ def worker_func(input_queue, output_queue):
                 if net is not None:
                     net = mutate_net(net, net_seeds[-1])
                 else:
-                    net = build_net(env, net_seeds)
+                    net = build_net(env, net_seeds,device)
             else:
-                net = build_net(env, net_seeds)
+                net = build_net(env, net_seeds,device)
             new_cache[net_seeds] = net
             reward, steps = evaluate(env, net)
             output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
@@ -121,6 +122,10 @@ def worker_func(input_queue, output_queue):
 if __name__ == "__main__":
     mp.set_start_method('spawn')
     writer = SummaryWriter(comment="-cheetah-ga")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
+    args = parser.parse_args()
+    device = torch.device("cuda" if args.cuda else "cpu")
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
@@ -128,7 +133,7 @@ if __name__ == "__main__":
     for _ in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
-        w = mp.Process(target=worker_func, args=(input_queue, output_queue))
+        w = mp.Process(target=worker_func, args=(input_queue, output_queue,device))
         w.start()
         seeds = [(np.random.randint(MAX_SEED),) for _ in range(SEEDS_PER_WORKER)]
         input_queue.put(seeds)
