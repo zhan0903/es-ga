@@ -18,9 +18,9 @@ from tensorboardX import SummaryWriter
 
 
 NOISE_STD = 0.005
-POPULATION_SIZE = 12#2000
+POPULATION_SIZE = 1200#2000
 PARENTS_COUNT = 10
-WORKERS_COUNT = 2
+WORKERS_COUNT = 6
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
@@ -64,7 +64,7 @@ def evaluate(env, net, device="cpu"):
         obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
         act_prob = net(obs_v)
         acts = act_prob.max(dim=1)[1]
-        obs, r, done, _ = env.step(acts.data.numpy()[0])
+        obs, r, done, _ = env.step(acts.data.cpu().numpy()[0])
         reward += r
         steps += 1
         if done:
