@@ -55,7 +55,7 @@ class Net(nn.Module):
         return self.fc(conv_out)
 
 
-def evaluate(env, net,device):
+def evaluate(env, net, device="cpu"):
     obs = env.reset()
     reward = 0.0
     steps = 0
@@ -71,7 +71,7 @@ def evaluate(env, net,device):
     return reward, steps
 
 
-def mutate_net(net, seed, copy_net=True):
+def mutate_net(net, seed, device, copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
@@ -95,7 +95,7 @@ def make_env():
     return ptan.common.wrappers.wrap_dqn(gym.make("PongNoFrameskip-v4"))
 
 
-def worker_func(input_queue, output_queue,device):
+def worker_func(input_queue, output_queue, device):
     env = make_env()#gym.make("RoboschoolHalfCheetah-v1")
     cache = {}
 
@@ -110,22 +110,24 @@ def worker_func(input_queue, output_queue,device):
                 if net is not None:
                     net = mutate_net(net, net_seeds[-1])
                 else:
-                    net = build_net(env, net_seeds,device)
+                    net = build_net(env, net_seeds, device)
             else:
-                net = build_net(env, net_seeds,device)
+                net = build_net(env, net_seeds, device)
             new_cache[net_seeds] = net
-            reward, steps = evaluate(env, net)
+            reward, steps = evaluate(env, net, device)
             output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
         cache = new_cache
 
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
-    writer = SummaryWriter(comment="-cheetah-ga")
+    writer = SummaryWriter(comment="-pong-ga")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
     device = torch.device("cuda" if args.cuda else "cpu")
+
+    device = "cpu"
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     for _ in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
-        w = mp.Process(target=worker_func, args=(input_queue, output_queue,device))
+        w = mp.Process(target=worker_func, args=(input_queue, output_queue, device))
         w.start()
         seeds = [(np.random.randint(MAX_SEED),) for _ in range(SEEDS_PER_WORKER)]
         input_queue.put(seeds)
