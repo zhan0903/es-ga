@@ -4,7 +4,6 @@ import gym
 import ptan
 #import roboschool
 import collections
-import itertools
 import copy
 import time
 import numpy as np
@@ -18,9 +17,9 @@ from tensorboardX import SummaryWriter
 
 
 NOISE_STD = 0.01
-POPULATION_SIZE = 4#2000
-PARENTS_COUNT = 2
-WORKERS_COUNT = 2
+POPULATION_SIZE = 1000#2000
+PARENTS_COUNT = 10
+WORKERS_COUNT = 10
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
@@ -30,12 +29,8 @@ class Net(nn.Module):
     def __init__(self, input_shape, n_actions):
         super(Net, self).__init__()
 
-        # self.conv1 = nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=3)
-        # self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
-        # self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
-
         self.conv = nn.Sequential(
-            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=3),
+            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2),
             nn.ReLU(),
@@ -76,30 +71,6 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def evaluate_batch(envs, net, device="cpu"):
-    count = len(envs)
-    obs = [np.array(e.reset(), copy=False) for e in envs]
-    rewards = [0.0 for _ in range(count)]
-    steps = [0 for _ in range(count)]
-    done_set = set()
-
-    while len(done_set) < count:
-        obs_v = torch.FloatTensor(obs).to(device)
-        out_v = net(obs_v)
-        act = out_v.max(dim=1)[1]
-        out = act.data.cpu().numpy()
-        for i in range(count):
-            if i in done_set:
-                continue
-            new_o, r, done, _ = envs[i].step(out[i])
-            obs[i] = np.array(new_o, copy=False)
-            rewards[i] += r
-            steps[i] += 1
-            if done:
-                done_set.add(i)
-    return rewards, steps
-
-
 def mutate_net(net, seed, copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
@@ -125,37 +96,32 @@ def make_env():
 
 
 def worker_func(input_queue, output_queue, device="cpu"):
-    #env = make_env()#gym.make("RoboschoolHalfCheetah-v1")
-    env_pool = [make_env()]
-    #cache = {}
-    # first generation -- just evaluate given single seeds
-    parents = input_queue.get()
-    for seed in parents:
-        net = build_net(env_pool[0], seed).to(device)
-        #net.zero_noise(batch_size=1)
-        reward, steps = evaluate(env_pool[0], net, device)
-        output_queue.put((seed, reward, steps))
+    env = make_env()#gym.make("RoboschoolHalfCheetah-v1")
+    cache = {}
 
     while True:
         parents = input_queue.get()
         if parents is None:
             break
-        parents.sort()
-        for parent_seeds, children_iter in itertools.groupby(parents, key=lambda s: s[:-1]):
-            batch = list(children_iter)
-            children_seeds = [b[-1] for b in batch]
-            net = build_net(env_pool[0], parent_seeds).to(device)
-            #net.set_noise_seeds(children_seeds)
-            batch_size = len(children_seeds)
-            while len(env_pool) < batch_size:
-                env_pool.append(make_env())
-            rewards, steps = evaluate_batch(env_pool[:batch_size], net, device)
-            for seeds, reward, step in zip(batch, rewards, steps):
-                output_queue.put((seeds, reward, step))
+        new_cache = {}
+        for net_seeds in parents:
+            if len(net_seeds) > 1:
+                net = cache.get(net_seeds[:-1])
+                if net is not None:
+                    net = mutate_net(net, net_seeds[-1])
+                else:
+                    net = build_net(env, net_seeds).to(device)
+            else:
+                net = build_net(env, net_seeds).to(device)
+            new_cache[net_seeds] = net
+            reward, steps = evaluate(env, net, device)
+            output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
+        cache = new_cache
+
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
-    writer = SummaryWriter(comment="-pong-ga-batch")
+    writer = SummaryWriter(comment="-pong-ga")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
@@ -176,18 +142,15 @@ if __name__ == "__main__":
     elite = None
     while True:
         t_start = time.time()
-        #print("come here.")
         batch_steps = 0
         population = []
         while len(population) < SEEDS_PER_WORKER * WORKERS_COUNT:
-            # out_item = output_queue.get()
-            seeds, reward, steps = output_queue.get()
-            population.append((seeds, reward))
-            batch_steps += steps
+            out_item = output_queue.get()
+            population.append((out_item.seeds, out_item.reward))
+            batch_steps += out_item.steps
         if elite is not None:
             population.append(elite)
         population.sort(key=lambda p: p[1], reverse=True)
-        # get the top parents which the number is parents_count.
         rewards = [p[1] for p in population[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
         reward_max = np.max(rewards)
@@ -202,7 +165,6 @@ if __name__ == "__main__":
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s" % (
             gen_idx, reward_mean, reward_max, reward_std, speed))
 
-        # take the top 1 individual as the elite, seeds_per_workder means individuals per worker.
         elite = population[0]
         for worker_queue in input_queues:
             seeds = []
