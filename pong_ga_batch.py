@@ -17,7 +17,7 @@ import torch.multiprocessing as mp
 from tensorboardX import SummaryWriter
 
 
-NOISE_STD = 0.005
+NOISE_STD = 0.01
 POPULATION_SIZE = 1200#2000
 PARENTS_COUNT = 10
 WORKERS_COUNT = 6
@@ -131,7 +131,6 @@ def worker_func(input_queue, output_queue, device="cpu"):
         #net.zero_noise(batch_size=1)
         reward, steps = evaluate(env_pool[0], net, device)
         output_queue.put((seed, reward, steps))
-
 
     while True:
         parents = input_queue.get()
