@@ -71,20 +71,20 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(net, seed, copy_net=True):
+def mutate_net(net, seed, device="cpu", copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
-        noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32))
+        noise_t = torch.from_numpy(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
         p.data += NOISE_STD * noise_t
     return new_net
 
 
-def build_net(env, seeds):
+def build_net(env, seeds, device="cpu"):
     torch.manual_seed(seeds[0])
     net = Net(env.observation_space.shape, env.action_space.n)
     for seed in seeds[1:]:
-        net = mutate_net(net, seed, copy_net=False)
+        net = mutate_net(net, seed, device, copy_net=False)
     return net
 
 
@@ -108,11 +108,11 @@ def worker_func(input_queue, output_queue, device="cpu"):
             if len(net_seeds) > 1:
                 net = cache.get(net_seeds[:-1])
                 if net is not None:
-                    net = mutate_net(net, net_seeds[-1])
+                    net = mutate_net(net, net_seeds[-1],device)
                 else:
-                    net = build_net(env, net_seeds).to(device)
+                    net = build_net(env, net_seeds,device).to(device)
             else:
-                net = build_net(env, net_seeds).to(device)
+                net = build_net(env, net_seeds,device).to(device)
             new_cache[net_seeds] = net
             reward, steps = evaluate(env, net, device)
             output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
