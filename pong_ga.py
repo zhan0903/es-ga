@@ -17,7 +17,7 @@ from tensorboardX import SummaryWriter
 
 
 NOISE_STD = 0.01
-POPULATION_SIZE = 1000#2000
+POPULATION_SIZE = 800#2000
 #POPULATION_SIZE = 4#2000
 PARENTS_COUNT = 10
 #PARENTS_COUNT = 2
@@ -78,7 +78,7 @@ def mutate_net(net, seed, device="cpu", copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
-        noise_t = torch.FloatTensor(np.random.normal(size=p.data.size()).astype(np.float32))
+        noise_t = torch.from_numpy(np.random.normal(size=p.data.size()).astype(np.float32))
         temp = NOISE_STD*noise_t
         #p.data += NOISE_STD * noise_t
         #print(temp.is_cuda,p.data.is_cuda)
