@@ -18,8 +18,11 @@ from tensorboardX import SummaryWriter
 
 NOISE_STD = 0.01
 POPULATION_SIZE = 1000#2000
+#POPULATION_SIZE = 4#2000
 PARENTS_COUNT = 10
+#PARENTS_COUNT = 2
 WORKERS_COUNT = 10
+#WORKERS_COUNT = 2
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
@@ -75,8 +78,13 @@ def mutate_net(net, seed, device="cpu", copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
-        noise_t = torch.from_numpy(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
-        p.data += NOISE_STD * noise_t
+        noise_t = torch.FloatTensor(np.random.normal(size=p.data.size()).astype(np.float32))
+        temp = NOISE_STD*noise_t
+        #p.data += NOISE_STD * noise_t
+        #print(temp.is_cuda,p.data.is_cuda)
+        if(p.data.is_cuda):
+            temp = temp.cuda()
+        p.data += temp
     return new_net
 
 
@@ -108,7 +116,7 @@ def worker_func(input_queue, output_queue, device="cpu"):
             if len(net_seeds) > 1:
                 net = cache.get(net_seeds[:-1])
                 if net is not None:
-                    net = mutate_net(net, net_seeds[-1],device)
+                    net = mutate_net(net, net_seeds[-1],device)#to(device)
                 else:
                     net = build_net(env, net_seeds,device).to(device)
             else:
@@ -174,5 +182,3 @@ if __name__ == "__main__":
                 seeds.append(tuple(list(population[parent][0]) + [next_seed]))
             worker_queue.put(seeds)
         gen_idx += 1
-
-    pass
