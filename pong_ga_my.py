@@ -116,7 +116,7 @@ def worker_func(input_queue, output_queue, device="cpu"):
             if len(net_seeds) > 1:
                 net = cache.get(net_seeds[:-1])
                 if net is not None:
-                    net = mutate_net(net, net_seeds[-1],device)#to(device)
+                    net = mutate_net(net, net_seeds[-1],device).to(device)
                 else:
                     net = build_net(env, net_seeds,device).to(device)
             else:
@@ -148,6 +148,7 @@ if __name__ == "__main__":
 
     gen_idx = 0
     elite = None
+    time_start = time.time()
     while True:
         t_start = time.time()
         batch_steps = 0
@@ -170,8 +171,9 @@ if __name__ == "__main__":
         writer.add_scalar("gen_seconds", time.time() - t_start, gen_idx)
         speed = batch_steps / (time.time() - t_start)
         writer.add_scalar("speed", speed, gen_idx)
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s" % (
-            gen_idx, reward_mean, reward_max, reward_std, speed))
+        total_time = (time.time() - time_start)/60
+        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f s" % (
+            gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         elite = population[0]
         for worker_queue in input_queues:
