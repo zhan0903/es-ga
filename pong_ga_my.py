@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
-    device = "cuda" if args.cuda else "cpu"
+    device = "cuda:1" if args.cuda else "cpu"
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
