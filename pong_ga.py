@@ -17,11 +17,11 @@ from tensorboardX import SummaryWriter
 
 
 NOISE_STD = 0.01
-POPULATION_SIZE = 2000#800#2000
+POPULATION_SIZE = 600#800#2000
 #POPULATION_SIZE = 4#2000
 PARENTS_COUNT = 10
 #PARENTS_COUNT = 2
-WORKERS_COUNT = 10
+WORKERS_COUNT = 6
 #WORKERS_COUNT = 2
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
-    device = "cuda" if args.cuda else "cpu"
+    device = "cuda:1" if args.cuda else "cpu"
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
