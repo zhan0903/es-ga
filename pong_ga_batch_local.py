@@ -138,6 +138,7 @@ def worker_func(input_queue, output_queue, device="cpu"):
 
     while True:
         parents = input_queue.get()
+        print(mp.current_process(), parents)
         if parents is None:
             break
         parents.sort()

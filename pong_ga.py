@@ -121,9 +121,9 @@ def worker_func(input_queue, output_queue, device="cpu"):
                     net = build_net(env, net_seeds,device).to(device)
             else:
                 net = build_net(env, net_seeds,device).to(device)
-            new_cache[net_seeds] = net
+            new_cache[net_seeds[-1]] = net
             reward, steps = evaluate(env, net, device)
-            output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
+            output_queue.put(OutputItem(seeds=net_seeds[-1], reward=reward, steps=steps))
         cache = new_cache
 
 
@@ -179,6 +179,6 @@ if __name__ == "__main__":
             for _ in range(SEEDS_PER_WORKER):
                 parent = np.random.randint(PARENTS_COUNT)
                 next_seed = np.random.randint(MAX_SEED)
-                seeds.append(tuple(list(population[parent][0]) + [next_seed]))
+                seeds.append(tuple([population[parent][0], next_seed]))
             worker_queue.put(seeds)
         gen_idx += 1

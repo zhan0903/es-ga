@@ -101,6 +101,7 @@ def worker_func(input_queue, output_queue, device="cpu"):
 
     while True:
         parents = input_queue.get()
+        #print(mp.current_process(), parents)
         if parents is None:
             break
         new_cache = {}
@@ -113,9 +114,10 @@ def worker_func(input_queue, output_queue, device="cpu"):
                     net = build_net(env, net_seeds).to(device)
             else:
                 net = build_net(env, net_seeds).to(device)
-            new_cache[net_seeds] = net
+            # store{(seed,):net}
+            new_cache[net_seeds[-1]] = net
             reward, steps = evaluate(env, net, device)
-            output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
+            output_queue.put(OutputItem(seeds=net_seeds[-1], reward=reward, steps=steps))
         cache = new_cache
 
 
@@ -166,13 +168,16 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed))
 
         elite = population[0]
+        print(mp.current_process(), "population:", population)
         for worker_queue in input_queues:
             seeds = []
-            for _ in range(SEEDS_PER_WORKER):
+            for i in range(SEEDS_PER_WORKER):
                 parent = np.random.randint(PARENTS_COUNT)
                 next_seed = np.random.randint(MAX_SEED)
-                seeds.append(tuple(list(population[parent][0]) + [next_seed]))
+                #print("population[parent][0],next_seed", population[parent][0],next_seed)
+                seeds.append(tuple([population[parent][0], next_seed]))
+                #print(i, mp.current_process(), "seeds:", seeds)
             worker_queue.put(seeds)
+            #print(mp.current_process(), seeds)
         gen_idx += 1
-
     pass
