@@ -8,6 +8,7 @@ import copy
 import time
 import numpy as np
 import argparse
+import logging
 
 import torch
 import torch.nn as nn
@@ -23,6 +24,9 @@ WORKERS_COUNT = 2
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class Net(nn.Module):
@@ -74,16 +78,24 @@ def evaluate(env, net, device="cpu"):
 def mutate_net(net, seed, copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
+    i = 0
+    #logger.debug("current_process, %s", mp.current_process())
+    #logger.debug("current_process, %s, new_new's weight:%s\n", mp.current_process(), new_net.conv[2].weight)
     for p in new_net.parameters():
+        #logger.debug("p.data's size, type %s, %s", p.size(), type(p.data))
         noise_t = torch.from_numpy(np.random.normal(size=p.data.size()).astype(np.float32))
         p.data += NOISE_STD * noise_t
+        i += 1
+    #logger.debug("current_process, %s, sum of p:%s", mp.current_process(), i)
     return new_net
 
 
 def build_net(env, seeds):
     torch.manual_seed(seeds[0])
     net = Net(env.observation_space.shape, env.action_space.n)
+    logger.debug("in build_net,current_process: %s,seeds:%s",mp.current_process(),seeds)
     for seed in seeds[1:]:
+        print(mp.current_process(), seed)
         net = mutate_net(net, seed, copy_net=False)
     return net
 
@@ -115,12 +127,12 @@ def worker_func(input_queue, output_queue, device="cpu"):
             else:
                 net = build_net(env, net_seeds).to(device)
             # store{(seed,):net}
-            new_cache[net_seeds[-1]] = net
+            new_cache[net_seeds] = net
             reward, steps = evaluate(env, net, device)
-            output_queue.put(OutputItem(seeds=net_seeds[-1], reward=reward, steps=steps))
+            output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
         cache = new_cache
         #print("len of cache", len(cache))
-        print(cache)
+        #print(cache)
 
 
 if __name__ == "__main__":
@@ -130,6 +142,7 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
     device = "cuda" if args.cuda else "cpu"
+
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
@@ -177,7 +190,7 @@ if __name__ == "__main__":
                 parent = np.random.randint(PARENTS_COUNT)
                 next_seed = np.random.randint(MAX_SEED)
                 #print("population[parent][0],next_seed", population[parent][0],next_seed)
-                seeds.append(tuple([population[parent][0], next_seed]))
+                seeds.append(tuple(list(population[parent][0]) + [next_seed]))
                 #print(i, mp.current_process(), "seeds:", seeds)
             worker_queue.put(seeds)
             #print(mp.current_process(), seeds)

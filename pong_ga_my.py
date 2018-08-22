@@ -17,9 +17,12 @@ from tensorboardX import SummaryWriter
 
 
 NOISE_STD = 0.01
-POPULATION_SIZE = 4#2000
-PARENTS_COUNT = 2
-WORKERS_COUNT = 2
+POPULATION_SIZE = 600#800#2000
+#POPULATION_SIZE = 4#2000
+PARENTS_COUNT = 10
+#PARENTS_COUNT = 2
+WORKERS_COUNT = 6
+#WORKERS_COUNT = 2
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
@@ -71,20 +74,25 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(net, seed, copy_net=True):
+def mutate_net(net, seed, device="cpu", copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
         noise_t = torch.from_numpy(np.random.normal(size=p.data.size()).astype(np.float32))
-        p.data += NOISE_STD * noise_t
+        temp = NOISE_STD*noise_t
+        #p.data += NOISE_STD * noise_t
+        #print(temp.is_cuda,p.data.is_cuda)
+        if(p.data.is_cuda):
+            temp = temp.cuda()
+        p.data += temp
     return new_net
 
 
-def build_net(env, seeds):
+def build_net(env, seeds, device="cpu"):
     torch.manual_seed(seeds[0])
     net = Net(env.observation_space.shape, env.action_space.n)
     for seed in seeds[1:]:
-        net = mutate_net(net, seed, copy_net=False)
+        net = mutate_net(net, seed, device, copy_net=False)
     return net
 
 
@@ -101,7 +109,6 @@ def worker_func(input_queue, output_queue, device="cpu"):
 
     while True:
         parents = input_queue.get()
-        print(mp.current_process(), parents)
         if parents is None:
             break
         new_cache = {}
@@ -109,18 +116,15 @@ def worker_func(input_queue, output_queue, device="cpu"):
             if len(net_seeds) > 1:
                 net = cache.get(net_seeds[:-1])
                 if net is not None:
-                    net = mutate_net(net, net_seeds[-1])
+                    net = mutate_net(net, net_seeds[-1],device)#to(device)
                 else:
-                    net = build_net(env, net_seeds).to(device)
+                    net = build_net(env, net_seeds,device).to(device)
             else:
-                net = build_net(env, net_seeds).to(device)
-            # store{(seed,):net}
-            new_cache[net_seeds[-1]] = net
+                net = build_net(env, net_seeds,device).to(device)
+            new_cache[net_seeds] = net
             reward, steps = evaluate(env, net, device)
-            output_queue.put(OutputItem(seeds=net_seeds[-1], reward=reward, steps=steps))
+            output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
         cache = new_cache
-        #print("len of cache", len(cache))
-        print(cache)
 
 
 if __name__ == "__main__":
@@ -170,16 +174,11 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed))
 
         elite = population[0]
-        print(mp.current_process(), "population:", population)
         for worker_queue in input_queues:
             seeds = []
-            for i in range(SEEDS_PER_WORKER):
+            for _ in range(SEEDS_PER_WORKER):
                 parent = np.random.randint(PARENTS_COUNT)
                 next_seed = np.random.randint(MAX_SEED)
-                #print("population[parent][0],next_seed", population[parent][0],next_seed)
-                seeds.append(tuple([population[parent][0], next_seed]))
-                #print(i, mp.current_process(), "seeds:", seeds)
+                seeds.append(tuple(list(population[parent][0]) + [next_seed]))
             worker_queue.put(seeds)
-            #print(mp.current_process(), seeds)
         gen_idx += 1
-    pass
