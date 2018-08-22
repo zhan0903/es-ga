@@ -92,7 +92,7 @@ def build_net(env, seeds, device="cpu"):
     torch.manual_seed(seeds[0])
     net = Net(env.observation_space.shape, env.action_space.n)
     for seed in seeds[1:]:
-        net = mutate_net(net, seed, device, copy_net=False)
+        net = mutate_net(net, seed, device, copy_net=False).to(device)
     return net
 
 
