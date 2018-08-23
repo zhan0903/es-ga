@@ -122,8 +122,8 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
         if parents is None:
             break
 
-        logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
-        logger.debug("current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+        #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+        #logger.debug("current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
 
         for net_seeds in parents:
             if len(net_seeds) > 1:
