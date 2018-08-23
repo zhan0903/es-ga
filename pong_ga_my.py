@@ -31,6 +31,10 @@ MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
+fh = logging.FileHandler('debug.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 
 class Net(nn.Module):
@@ -188,7 +192,7 @@ if __name__ == "__main__":
             population.append(elite)
 
         #top_parent_cache = {}
-        logger.debug("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+        #logger.debug("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
         #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
         population.sort(key=lambda p: p[1], reverse=True)
         #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
