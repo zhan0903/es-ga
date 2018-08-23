@@ -36,6 +36,11 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
 
 class Net(nn.Module):
     def __init__(self, input_shape, n_actions):
@@ -200,7 +205,7 @@ if __name__ == "__main__":
         # for i in range(PARENTS_COUNT):
         #     top_parent_cache[population[i][1][-1]] = population[i][0]
 
-        logger.debug("after current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+        #logger.debug("after current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
 
         rewards = [p[1] for p in population[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
