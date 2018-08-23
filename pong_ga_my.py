@@ -139,13 +139,15 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
 
         #logger.debug("before, current_process: %s,seeds:%s", mp.current_process(), population)
         population.sort(key=lambda p: p[2], reverse=True)
-        logger.debug("before output queue put, current_process: %s,population:%s", mp.current_process(), population)
+        #logger.debug("before output queue put, current_process: %s,population:%s", mp.current_process(), population)
 
         for i in range(PARENTS_COUNT):
             logger.debug("mp.current_process():%s, population[i][1][-1]:%s, type of population[i][0]:%s", mp.current_process(), population[i][1][-1], type(population[i][0]))
-            top_parent_cache[population[i][1][-1]] = population[i][0]
+            top_parent_cache[population[i][1][-1]] = population[i][0].cuda()
             output_queue.put(OutputItem(seeds=population[i][1], reward=population[i][2], steps=population[i][3]))
-        logger.debug("after output queue put, current_process: %s,population:%s", mp.current_process(), population)
+        #logger.debug("after output queue put, current_process: %s,population:%s", mp.current_process(), population)
+
+#top_parent_cache={}
 
 
 if __name__ == "__main__":
@@ -158,6 +160,7 @@ if __name__ == "__main__":
 
     manager = mp.Manager()
     top_parent_cache = manager.dict()
+
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
