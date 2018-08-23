@@ -142,7 +142,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
         logger.debug("before output queue put, current_process: %s,population:%s", mp.current_process(), population)
 
         for i in range(PARENTS_COUNT):
-            logger.debug("mp.current_process():%s, population[i][1][-1]:%s, population[i][0]:%s", mp.current_process(), population[i][1][-1], population[i][0])
+            logger.debug("mp.current_process():%s, population[i][1][-1]:%s, type of population[i][0]:%s", mp.current_process(), population[i][1][-1], type(population[i][0]))
             top_parent_cache[population[i][1][-1]] = population[i][0]
             output_queue.put(OutputItem(seeds=population[i][1], reward=population[i][2], steps=population[i][3]))
         logger.debug("after output queue put, current_process: %s,population:%s", mp.current_process(), population)
