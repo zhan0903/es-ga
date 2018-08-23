@@ -17,13 +17,15 @@ import torch.multiprocessing as mp
 from tensorboardX import SummaryWriter
 
 
+POPULATION_SIZE = 600
+PARENTS_COUNT = 10
+WORKERS_COUNT = 6
+# POPULATION_SIZE = 4
+# PARENTS_COUNT = 2
+# WORKERS_COUNT = 2
+
+
 NOISE_STD = 0.01
-POPULATION_SIZE = 600#4#600#800#2000
-#POPULATION_SIZE = 4#2000
-PARENTS_COUNT = 10#2#10
-#PARENTS_COUNT = 2
-WORKERS_COUNT = 6#2#6
-#WORKERS_COUNT = 2
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 top_parent_cache = {}
@@ -119,16 +121,18 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
             break
         #new_cache = {}
         logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
-        logger.debug("current_process: %s,parents:%s", mp.current_process(), top_parent_cache)
-
+        logger.debug("current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
 
         for net_seeds in parents:
             if len(net_seeds) > 1:
-                net = top_parent_cache.get(net_seeds[:-1])
+                logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
+                             net_seeds[0], top_parent_cache)
+                net = top_parent_cache.get(net_seeds[0])
                 if net is not None:
                     net = mutate_net(net, net_seeds[-1], device).to(device)
                 else:
-                    net = build_net(env, net_seeds, device).to(device)
+                    assert False
+                    #net = build_net(env, net_seeds, device).to(device)
             else:
                 net = build_net(env, net_seeds, device).to(device)
             #new_cache[net_seeds] = net
@@ -181,8 +185,8 @@ if __name__ == "__main__":
         if elite is not None:
             population.append(elite)
 
-        top_parent_cache = {}
-        logger.info("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+        #top_parent_cache = {}
+        logger.debug("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
         #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
         population.sort(key=lambda p: p[2], reverse=True)
         #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
@@ -217,3 +221,7 @@ if __name__ == "__main__":
                 seeds.append(tuple([population[parent][1][-1], next_seed]))
             worker_queue.put(seeds)
         gen_idx += 1
+
+        time.sleep(1)
+        top_parent_cache = {}
+
