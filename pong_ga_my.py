@@ -17,12 +17,12 @@ import torch.multiprocessing as mp
 from tensorboardX import SummaryWriter
 
 
-# POPULATION_SIZE = 600
-# PARENTS_COUNT = 10
-# WORKERS_COUNT = 6
-POPULATION_SIZE = 4
-PARENTS_COUNT = 2
-WORKERS_COUNT = 2
+POPULATION_SIZE = 600
+PARENTS_COUNT = 10
+WORKERS_COUNT = 6
+# POPULATION_SIZE = 4
+# PARENTS_COUNT = 2
+# WORKERS_COUNT = 2
 
 
 NOISE_STD = 0.01
@@ -30,7 +30,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class Net(nn.Module):
@@ -101,7 +101,7 @@ def build_net(env, seeds, device="cpu"):
     return net
 
 
-OutputItem = collections.namedtuple('OutputItem', field_names=['nets', 'seeds', 'reward', 'steps'])
+OutputItem = collections.namedtuple('OutputItem', field_names=['seeds', 'reward', 'steps'])
 
 
 def make_env():
@@ -142,8 +142,9 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
         logger.debug("before output queue put, current_process: %s,population:%s", mp.current_process(), population)
 
         for i in range(PARENTS_COUNT):
-            output_queue.put(OutputItem(nets=population[i][0], seeds=population[i][1],
-                                        reward=population[i][2], steps=population[i][3]))
+            logger.debug("mp.current_process():%s, population[i][1][-1]:%s, population[i][0]:%s", mp.current_process(), population[i][1][-1], population[i][0])
+            top_parent_cache[population[i][1][-1]] = population[i][0]
+            output_queue.put(OutputItem(seeds=population[i][1], reward=population[i][2], steps=population[i][3]))
         logger.debug("after output queue put, current_process: %s,population:%s", mp.current_process(), population)
 
 
@@ -178,7 +179,7 @@ if __name__ == "__main__":
         population = []
         while len(population) < PARENTS_COUNT * WORKERS_COUNT:
             out_item = output_queue.get()
-            population.append((out_item.nets, out_item.seeds, out_item.reward))
+            population.append((out_item.seeds, out_item.reward))
             batch_steps += out_item.steps
         if elite is not None:
             population.append(elite)
@@ -186,15 +187,15 @@ if __name__ == "__main__":
         #top_parent_cache = {}
         logger.debug("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
         #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
-        population.sort(key=lambda p: p[2], reverse=True)
+        population.sort(key=lambda p: p[1], reverse=True)
         #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
 
-        for i in range(PARENTS_COUNT):
-            top_parent_cache[population[i][1][-1]] = population[i][0]
+        # for i in range(PARENTS_COUNT):
+        #     top_parent_cache[population[i][1][-1]] = population[i][0]
 
         logger.debug("after current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
 
-        rewards = [p[2] for p in population[:PARENTS_COUNT]]
+        rewards = [p[1] for p in population[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
         reward_max = np.max(rewards)
         reward_std = np.std(rewards)
@@ -216,10 +217,10 @@ if __name__ == "__main__":
             for _ in range(SEEDS_PER_WORKER):
                 parent = np.random.randint(PARENTS_COUNT)
                 next_seed = np.random.randint(MAX_SEED)
-                seeds.append(tuple([population[parent][1][-1], next_seed]))
+                seeds.append(tuple([population[parent][0][-1], next_seed]))
             worker_queue.put(seeds)
         gen_idx += 1
 
-        time.sleep(1)
-        top_parent_cache = {}
+        #time.sleep(1)
+        #top_parent_cache = {}
 
