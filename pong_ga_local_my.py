@@ -130,7 +130,7 @@ def worker_func(input_queue, output_queue, device="cpu"):
             new_cache[net_seeds] = net
             reward, steps = evaluate(env, net, device)
             output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
-        cache = new_cache
+        cache.update(new_cache)
         #print("len of cache", len(cache))
         #print(cache)
 
@@ -168,6 +168,8 @@ if __name__ == "__main__":
             batch_steps += out_item.steps
         if elite is not None:
             population.append(elite)
+        logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
+
         population.sort(key=lambda p: p[1], reverse=True)
         rewards = [p[1] for p in population[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)

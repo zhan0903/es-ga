@@ -8,6 +8,7 @@ import copy
 import time
 import numpy as np
 import argparse
+import logging
 
 import torch
 import torch.nn as nn
@@ -17,15 +18,18 @@ from tensorboardX import SummaryWriter
 
 
 NOISE_STD = 0.01
-POPULATION_SIZE = 600#800#2000
+POPULATION_SIZE = 600#4#600#800#2000
 #POPULATION_SIZE = 4#2000
-PARENTS_COUNT = 10
+PARENTS_COUNT = 10#2#10
 #PARENTS_COUNT = 2
-WORKERS_COUNT = 6
+WORKERS_COUNT = 6#2#6
 #WORKERS_COUNT = 2
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
+top_parent_cache = {}
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class Net(nn.Module):
@@ -92,39 +96,53 @@ def build_net(env, seeds, device="cpu"):
     torch.manual_seed(seeds[0])
     net = Net(env.observation_space.shape, env.action_space.n)
     for seed in seeds[1:]:
-        net = mutate_net(net, seed, device, copy_net=False).to(device)
+        net = mutate_net(net, seed, device, copy_net=False)#.to(device)
     return net
 
 
-OutputItem = collections.namedtuple('OutputItem', field_names=['seeds', 'reward', 'steps'])
+OutputItem = collections.namedtuple('OutputItem', field_names=['nets', 'seeds', 'reward', 'steps'])
 
 
 def make_env():
     return ptan.common.wrappers.wrap_dqn(gym.make("PongNoFrameskip-v4"))
 
 
-def worker_func(input_queue, output_queue, device="cpu"):
+def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
     env = make_env()#gym.make("RoboschoolHalfCheetah-v1")
-    cache = {}
+    #cache = {}
 
     while True:
         parents = input_queue.get()
+        population = []
+
         if parents is None:
             break
-        new_cache = {}
+        #new_cache = {}
+        logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+        logger.debug("current_process: %s,parents:%s", mp.current_process(), top_parent_cache)
+
+
         for net_seeds in parents:
             if len(net_seeds) > 1:
-                net = cache.get(net_seeds[:-1])
+                net = top_parent_cache.get(net_seeds[:-1])
                 if net is not None:
                     net = mutate_net(net, net_seeds[-1], device).to(device)
                 else:
-                    net = build_net(env, net_seeds,device).to(device)
+                    net = build_net(env, net_seeds, device).to(device)
             else:
-                net = build_net(env, net_seeds,device).to(device)
-            new_cache[net_seeds] = net
+                net = build_net(env, net_seeds, device).to(device)
+            #new_cache[net_seeds] = net
             reward, steps = evaluate(env, net, device)
-            output_queue.put(OutputItem(seeds=net_seeds, reward=reward, steps=steps))
-        cache = new_cache
+            population.append((net, net_seeds, reward, steps))
+
+        #logger.debug("before, current_process: %s,seeds:%s", mp.current_process(), population)
+        population.sort(key=lambda p: p[2], reverse=True)
+        #logger.debug("after, current_process: %s,seeds:%s", mp.current_process(), population)
+
+        for i in range(PARENTS_COUNT):
+            output_queue.put(OutputItem(nets=population[i][0], seeds=population[i][1],
+                                        reward=population[i][2], steps=population[i][3]))
+        #cache = new_cache
 
 
 if __name__ == "__main__":
@@ -135,6 +153,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     device = "cuda:1" if args.cuda else "cpu"
 
+    manager = mp.Manager()
+    top_parent_cache = manager.dict()
+
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
     workers = []
@@ -142,7 +163,7 @@ if __name__ == "__main__":
     for _ in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
-        w = mp.Process(target=worker_func, args=(input_queue, output_queue, device))
+        w = mp.Process(target=worker_func, args=(input_queue, output_queue, top_parent_cache, device))
         w.start()
         seeds = [(np.random.randint(MAX_SEED),) for _ in range(SEEDS_PER_WORKER)]
         input_queue.put(seeds)
@@ -153,14 +174,25 @@ if __name__ == "__main__":
         t_start = time.time()
         batch_steps = 0
         population = []
-        while len(population) < SEEDS_PER_WORKER * WORKERS_COUNT:
+        while len(population) < PARENTS_COUNT * WORKERS_COUNT:
             out_item = output_queue.get()
-            population.append((out_item.seeds, out_item.reward))
+            population.append((out_item.nets, out_item.seeds, out_item.reward))
             batch_steps += out_item.steps
         if elite is not None:
             population.append(elite)
-        population.sort(key=lambda p: p[1], reverse=True)
-        rewards = [p[1] for p in population[:PARENTS_COUNT]]
+
+        top_parent_cache = {}
+        logger.info("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+        #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
+        population.sort(key=lambda p: p[2], reverse=True)
+        #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
+
+        for i in range(PARENTS_COUNT):
+            top_parent_cache[population[i][1][-1]] = population[i][0]
+
+        logger.debug("after current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+
+        rewards = [p[2] for p in population[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
         reward_max = np.max(rewards)
         reward_std = np.std(rewards)
@@ -172,15 +204,16 @@ if __name__ == "__main__":
         speed = batch_steps / (time.time() - t_start)
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start)/60
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2fm" % (
+        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         elite = population[0]
+        #print(mp.current_process(), "population:", population)
         for worker_queue in input_queues:
             seeds = []
             for _ in range(SEEDS_PER_WORKER):
                 parent = np.random.randint(PARENTS_COUNT)
                 next_seed = np.random.randint(MAX_SEED)
-                seeds.append(tuple(list(population[parent][0]) + [next_seed]))
+                seeds.append(tuple([population[parent][1][-1], next_seed]))
             worker_queue.put(seeds)
         gen_idx += 1
