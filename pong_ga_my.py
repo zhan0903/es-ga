@@ -132,8 +132,8 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
 
         for net_seeds in parents:
             if len(net_seeds) > 1:
-                logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
-                             net_seeds[0], top_parent_cache)
+                #logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
+                             #net_seeds[0], top_parent_cache)
                 net = top_parent_cache.get(net_seeds[0])
                 if net is not None:
                     net = mutate_net(net, net_seeds[-1], device).to(device)
