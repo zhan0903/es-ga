@@ -165,89 +165,89 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
 
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')
-    writer = SummaryWriter(comment="-pong-ga")
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
-    args = parser.parse_args()
-    device = "cuda:1" if args.cuda else "cpu"
-
-    manager = mp.Manager()
-    top_parent_cache = manager.dict()
-
-    input_queues = []
-    output_queue = mp.Queue(maxsize=WORKERS_COUNT)
-    workers = []
-    time_start = time.time()
     try:
-        for _ in range(WORKERS_COUNT):
-            input_queue = mp.Queue(maxsize=1)
-            input_queues.append(input_queue)
-            w = mp.Process(target=worker_func, args=(input_queue, output_queue, top_parent_cache, device))
-            w.start()
-            seeds = [(np.random.randint(MAX_SEED),) for _ in range(SEEDS_PER_WORKER)]
-            input_queue.put(seeds)
-    except Exception as e:
-        logger.Exception("Unexpected exception! %s", e)
+        mp.set_start_method('spawn')
+        writer = SummaryWriter(comment="-pong-ga")
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
+        args = parser.parse_args()
+        device = "cuda:1" if args.cuda else "cpu"
 
-    gen_idx = 0
-    elite = None
-    while True:
-        t_start = time.time()
-        batch_steps = 0
-        population = []
+        manager = mp.Manager()
+        top_parent_cache = manager.dict()
+
+        input_queues = []
+        output_queue = mp.Queue(maxsize=WORKERS_COUNT)
+        workers = []
+        time_start = time.time()
         try:
-            while len(population) < PARENTS_COUNT * WORKERS_COUNT:
-                logger.debug("current_process:inside4,%s", mp.current_process())
-                out_item = output_queue.get()
-                logger.debug("current_process:inside5,%s", mp.current_process())
-
-                population.append((out_item.seeds, out_item.net, out_item.reward))
-                batch_steps += out_item.steps
-            if elite is not None:
-                population.append(elite)
+            for _ in range(WORKERS_COUNT):
+                input_queue = mp.Queue(maxsize=1)
+                input_queues.append(input_queue)
+                w = mp.Process(target=worker_func, args=(input_queue, output_queue, top_parent_cache, device))
+                w.start()
+                seeds = [(np.random.randint(MAX_SEED),) for _ in range(SEEDS_PER_WORKER)]
+                input_queue.put(seeds)
         except Exception as e:
-            logger.debug("comme here")
             logger.Exception("Unexpected exception! %s", e)
 
+        gen_idx = 0
+        elite = None
+        while True:
+            t_start = time.time()
+            batch_steps = 0
+            population = []
+            try:
+                while len(population) < PARENTS_COUNT * WORKERS_COUNT:
+                    logger.debug("current_process:inside4,%s", mp.current_process())
+                    out_item = output_queue.get()
+                    logger.debug("current_process:inside5,%s", mp.current_process())
 
-        #top_parent_cache = {}
-        #logger.debug("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
-        #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
-        population.sort(key=lambda p: p[2], reverse=True)
-        #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
+                    population.append((out_item.seeds, out_item.net, out_item.reward))
+                    batch_steps += out_item.steps
+                if elite is not None:
+                    population.append(elite)
+            except Exception as e:
+                logger.debug("comme here")
+                logger.Exception("Unexpected exception! %s", e)
 
-        # for i in range(PARENTS_COUNT):
-        #     top_parent_cache[population[i][1][-1]] = population[i][0]
 
-        #logger.debug("after current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+            #top_parent_cache = {}
+            #logger.debug("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+            #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
+            population.sort(key=lambda p: p[2], reverse=True)
+            #logger.debug("current_process: %s,seeds:%s", mp.current_process(), population)
 
-        rewards = [p[2] for p in population[:PARENTS_COUNT]]
-        reward_mean = np.mean(rewards)
-        reward_max = np.max(rewards)
-        reward_std = np.std(rewards)
-        writer.add_scalar("reward_mean", reward_mean, gen_idx)
-        writer.add_scalar("reward_std", reward_std, gen_idx)
-        writer.add_scalar("reward_max", reward_max, gen_idx)
-        writer.add_scalar("batch_steps", batch_steps, gen_idx)
-        writer.add_scalar("gen_seconds", time.time() - t_start, gen_idx)
-        speed = batch_steps / (time.time() - t_start)
-        writer.add_scalar("speed", speed, gen_idx)
-        total_time = (time.time() - time_start)/60
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
-            gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
+            # for i in range(PARENTS_COUNT):
+            #     top_parent_cache[population[i][1][-1]] = population[i][0]
 
-        try:
-            #logger.debug(mp.current_process(), "population:", population)
-            elite = population[0]
-            for worker_queue in input_queues:
-                seeds = []
-                for _ in range(SEEDS_PER_WORKER):
-                    parent = np.random.randint(PARENTS_COUNT)
-                    next_seed = np.random.randint(MAX_SEED)
-                    seeds.append(tuple([population[parent][0][-1], population[parent][1], next_seed]))
-                worker_queue.put(seeds)
-            gen_idx += 1
+            #logger.debug("after current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
+
+            rewards = [p[2] for p in population[:PARENTS_COUNT]]
+            reward_mean = np.mean(rewards)
+            reward_max = np.max(rewards)
+            reward_std = np.std(rewards)
+            writer.add_scalar("reward_mean", reward_mean, gen_idx)
+            writer.add_scalar("reward_std", reward_std, gen_idx)
+            writer.add_scalar("reward_max", reward_max, gen_idx)
+            writer.add_scalar("batch_steps", batch_steps, gen_idx)
+            writer.add_scalar("gen_seconds", time.time() - t_start, gen_idx)
+            speed = batch_steps / (time.time() - t_start)
+            writer.add_scalar("speed", speed, gen_idx)
+            total_time = (time.time() - time_start)/60
+            print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
+                gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
+
+                #logger.debug(mp.current_process(), "population:", population)
+                elite = population[0]
+                for worker_queue in input_queues:
+                    seeds = []
+                    for _ in range(SEEDS_PER_WORKER):
+                        parent = np.random.randint(PARENTS_COUNT)
+                        next_seed = np.random.randint(MAX_SEED)
+                        seeds.append(tuple([population[parent][0][-1], population[parent][1], next_seed]))
+                    worker_queue.put(seeds)
+                gen_idx += 1
         except Exception as e:
             logger.debug("comme here")
             logger.Exception("Unexpected exception! %s", e)
