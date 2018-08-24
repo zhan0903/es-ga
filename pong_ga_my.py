@@ -199,7 +199,10 @@ if __name__ == "__main__":
         batch_steps = 0
         population = []
         while len(population) < PARENTS_COUNT * WORKERS_COUNT:
+            logger.debug("current_process:inside4,%s", mp.current_process())
             out_item = output_queue.get()
+            logger.debug("current_process:inside5,%s", mp.current_process())
+
             population.append((out_item.seeds, out_item.net, out_item.reward))
             batch_steps += out_item.steps
         if elite is not None:
