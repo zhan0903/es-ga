@@ -152,10 +152,10 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
             #logger.debug("output queue put, current_process: %s,population:%s", mp.current_process(), population[:][1])
 
             for i in range(PARENTS_COUNT):
+                logger.debug("current_process:inside3,%s, population[i][0],%s", mp.current_process(), population[i][0])
                 #top_parent_cache[population[i][1][-1]] = population[i][0].state_dict()
                 output_queue.put(OutputItem(seeds=population[i][1], net=population[i][0].state_dict(), reward=population[i][2],
                                             steps=population[i][3]))
-                logger.debug("current_process:inside3,%s", mp.current_process())
         except Exception as e:
             logger.debug("comme here")
             logger.Exception("Unexpected exception! %s", e)
