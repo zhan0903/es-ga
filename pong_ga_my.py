@@ -158,7 +158,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
                 logger.debug("current_process:inside3,%s", mp.current_process())
         except Exception as e:
             logger.debug("comme here")
-            logger.error(e, exc_info=True)
+            logger.Exception("Unexpected exception! %s", e)
         #logger.debug("after output queue put, current_process: %s,population:%s", mp.current_process(), population)
 
 #top_parent_cache={}
@@ -179,13 +179,16 @@ if __name__ == "__main__":
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
     workers = []
     time_start = time.time()
-    for _ in range(WORKERS_COUNT):
-        input_queue = mp.Queue(maxsize=1)
-        input_queues.append(input_queue)
-        w = mp.Process(target=worker_func, args=(input_queue, output_queue, top_parent_cache, device))
-        w.start()
-        seeds = [(np.random.randint(MAX_SEED),) for _ in range(SEEDS_PER_WORKER)]
-        input_queue.put(seeds)
+    try:
+        for _ in range(WORKERS_COUNT):
+            input_queue = mp.Queue(maxsize=1)
+            input_queues.append(input_queue)
+            w = mp.Process(target=worker_func, args=(input_queue, output_queue, top_parent_cache, device))
+            w.start()
+            seeds = [(np.random.randint(MAX_SEED),) for _ in range(SEEDS_PER_WORKER)]
+            input_queue.put(seeds)
+    except Exception as e:
+        logger.Exception("Unexpected exception! %s", e)
 
     gen_idx = 0
     elite = None
@@ -205,7 +208,7 @@ if __name__ == "__main__":
                 population.append(elite)
         except Exception as e:
             logger.debug("comme here")
-            logger.error(e, exc_info=True)
+            logger.Exception("Unexpected exception! %s", e)
 
 
         #top_parent_cache = {}
@@ -247,7 +250,7 @@ if __name__ == "__main__":
             gen_idx += 1
         except Exception as e:
             logger.debug("comme here")
-            logger.error(e, exc_info=True)
+            logger.Exception("Unexpected exception! %s", e)
 
         #time.sleep(1)
         #top_parent_cache = {}
