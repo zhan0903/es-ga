@@ -111,10 +111,11 @@ def worker_func(parents, output_queue,  device="cpu"):
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
+            logger.debug("current_process: %s,parents[parent]:%s", mp.current_process(), parents[parent])
             child_net = mutate_net(parents[parent], child_seed).to(device)
             reward, steps = evaluate(env, child_net, device)
             child.append((child_net, reward, steps))
-            logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+            #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
 
         child.sort(key=lambda p: p[1], reverse=True)
 
