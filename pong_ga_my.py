@@ -129,13 +129,14 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
         if parents is None:
             break
 
-        logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+        #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
         #logger.debug("current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
 
         for net_seeds in parents:
             if len(net_seeds) > 1:
                 #logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
                              #net_seeds[0], top_parent_cache)
+                logger.debug("current_process:inside1", mp.current_process())
                 net = net_seeds[1]
                 if net is not None:
                     net = mutate_net(net, net_seeds[-1], device).to(device)
@@ -144,6 +145,8 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
                     #net = build_net(env, net_seeds, device).to(device)
             else:
                 net = build_net(env, net_seeds, device).to(device)
+                logger.debug("current_process:inside2", mp.current_process())
+
 
             reward, steps = evaluate(env, net, device)
             population.append((net, net_seeds, reward, steps))
@@ -156,6 +159,8 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
             #top_parent_cache[population[i][1][-1]] = population[i][0].state_dict()
             output_queue.put(OutputItem(seeds=population[i][1], net=population[i][0], reward=population[i][2],
                                         steps=population[i][3]))
+            logger.debug("current_process:inside3", mp.current_process())
+
         #logger.debug("after output queue put, current_process: %s,population:%s", mp.current_process(), population)
 
 #top_parent_cache={}
