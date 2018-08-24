@@ -136,7 +136,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
             if len(net_seeds) > 1:
                 #logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
                              #net_seeds[0], top_parent_cache)
-                logger.debug("current_process:inside1", mp.current_process())
+                logger.debug("current_process:inside1,%s", mp.current_process())
                 net = net_seeds[1]
                 if net is not None:
                     net = mutate_net(net, net_seeds[-1], device).to(device)
@@ -145,7 +145,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
                     #net = build_net(env, net_seeds, device).to(device)
             else:
                 net = build_net(env, net_seeds, device).to(device)
-                logger.debug("current_process:inside2", mp.current_process())
+                logger.debug("current_process:inside2,%s", mp.current_process())
 
 
             reward, steps = evaluate(env, net, device)
@@ -153,13 +153,13 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
 
         #logger.debug("before, current_process: %s,seeds:%s", mp.current_process(), population)
         population.sort(key=lambda p: p[2], reverse=True)
-        logger.debug("output queue put, current_process: %s,population:%s", mp.current_process(), population[:][1])
+        #logger.debug("output queue put, current_process: %s,population:%s", mp.current_process(), population[:][1])
 
         for i in range(PARENTS_COUNT):
             #top_parent_cache[population[i][1][-1]] = population[i][0].state_dict()
             output_queue.put(OutputItem(seeds=population[i][1], net=population[i][0], reward=population[i][2],
                                         steps=population[i][3]))
-            logger.debug("current_process:inside3", mp.current_process())
+            logger.debug("current_process:inside3,%s", mp.current_process())
 
         #logger.debug("after output queue put, current_process: %s,population:%s", mp.current_process(), population)
 
