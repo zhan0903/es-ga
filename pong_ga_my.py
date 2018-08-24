@@ -147,7 +147,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
                 reward, steps = evaluate(env, net, device)
                 population.append((net, net_seeds, reward, steps))
         except Exception as e:
-            print("comme here")
+            logger.debug("comme here")
             logger.error(e, exc_info=True)
             #raise
 
@@ -206,7 +206,7 @@ if __name__ == "__main__":
             if elite is not None:
                 population.append(elite)
         except Exception as e:
-            print("comme here")
+            logger.debug("comme here")
             logger.error(e, exc_info=True)
 
 
@@ -237,7 +237,7 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         try:
-            print(mp.current_process(), "population:", population)
+            logger.debug(mp.current_process(), "population:", population)
             elite = population[0]
             for worker_queue in input_queues:
                 seeds = []
@@ -248,7 +248,7 @@ if __name__ == "__main__":
                 worker_queue.put(seeds)
             gen_idx += 1
         except Exception as e:
-            print("comme here")
+            logger.debug("comme here")
             logger.error(e, exc_info=True)
 
         #time.sleep(1)
