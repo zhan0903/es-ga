@@ -136,7 +136,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
             if len(net_seeds) > 1:
                 #logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
                              #net_seeds[0], top_parent_cache)
-                logger.debug("current_process:inside1,%s", mp.current_process())
+                logger.debug("current_process:inside1,%s,net_seeds:%s", mp.current_process(), net_seeds)
                 net = Net(env.observation_space.shape, env.action_space.n)
                 #net = net_seeds[1]
                 net.load_state_dict(net_seeds[1])
