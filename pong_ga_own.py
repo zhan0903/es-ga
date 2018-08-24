@@ -89,8 +89,8 @@ def evaluate(env, net, device="cpu"):
 def mutate_net(net, seed, copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
-    for p in new_net.parameters():
-        noise_t = torch.from_numpy(np.random.normal(size=p.data.size()).astype(np.float32))
+    for p in new_net:#.parameters():
+        noise_t = torch.from_numpy(np.random.normal(size=p[1].data.size()).astype(np.float32))
         temp = NOISE_STD*noise_t
         if(p.data.is_cuda):
             temp = temp.cuda()
