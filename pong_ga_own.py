@@ -114,6 +114,8 @@ def worker_func(parents, output_queue,  device="cpu"):
             child_net = mutate_net(parents[parent], child_seed).to(device)
             reward, steps = evaluate(env, child_net, device)
             child.append((child_net, reward, steps))
+            logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+
         child.sort(key=lambda p: p[1], reverse=True)
 
         for i in range(PARENTS_COUNT):
