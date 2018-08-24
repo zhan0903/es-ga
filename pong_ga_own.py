@@ -74,12 +74,12 @@ def evaluate(env, net, device="cpu"):
     obs = env.reset()
     reward = 0.0
     steps = 0
-    net_model = Net(env.observation_space.shape, env.action_space.n).to(device)
+    net_model = Net(env.observation_space.shape, env.action_space.n)#.to(device)
     net_model.load_state_dict(net)
 
-    print("in evalue,net_model", net_model)
+    #print("in evalue,net_model", net_model)
     while True:
-        obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
+        obs_v = torch.FloatTensor([np.array(obs, copy=False)])#.to(device)
         act_prob = net_model(obs_v)
         acts = act_prob.max(dim=1)[1]
         obs, r, done, _ = env.step(acts.data.cpu().numpy()[0])
@@ -120,9 +120,9 @@ def worker_func(parents, output_queue,  device="cpu"):
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
-            logger.debug("current_process: %s,parents[parent]:%s", mp.current_process(), parents[parent])
+            #logger.debug("current_process: %s,parents[parent]:%s", mp.current_process(), parents[parent])
             child_net = mutate_net(parents[parent], child_seed)#.to(device)
-            reward, steps = evaluate(env, child_net, device)
+            reward, steps = evaluate(env, child_net, device).to(device)
             child.append((child_net, reward, steps))
             #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
 
