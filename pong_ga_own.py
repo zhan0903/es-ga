@@ -74,9 +74,13 @@ def evaluate(env, net, device="cpu"):
     obs = env.reset()
     reward = 0.0
     steps = 0
+    net_model = Net(env.observation_space.shape, env.action_space.n)
+    net_model.load_state_dict(net)
+
+    print("in evalue,net,net.load_state_dict",net,net.load_state_dict)
     while True:
         obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
-        act_prob = net(obs_v)
+        act_prob = net_model(obs_v)
         acts = act_prob.max(dim=1)[1]
         obs, r, done, _ = env.step(acts.data.cpu().numpy()[0])
         reward += r
@@ -92,7 +96,7 @@ def mutate_net(net, seed, copy_net=True):
     #for p in net:#.parameters():
     for key, value in net.items():
         #logger.debug("current_process: %s,p[]:%s", mp.current_process(), parents[parent])
-        print("key,value,value.data", key, value, type(value))
+        #print("key,value,value.data", key, value, type(value))
         noise_t = torch.from_numpy(np.random.normal(size=value.data.size()).astype(np.float32))
         #temp = NOISE_STD*noise_t
         value.data = NOISE_STD*noise_t
