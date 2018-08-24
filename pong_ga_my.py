@@ -30,7 +30,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -125,7 +125,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
             if parents is None:
                 break
 
-            logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+            #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
             #logger.debug("current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
 
             for net_seeds in parents:
@@ -235,7 +235,7 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         try:
-            logger.debug(mp.current_process(), "population:", population)
+            #logger.debug(mp.current_process(), "population:", population)
             elite = population[0]
             for worker_queue in input_queues:
                 seeds = []
