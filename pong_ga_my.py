@@ -237,15 +237,19 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         elite = population[0]
+        try:
         #print(mp.current_process(), "population:", population)
-        for worker_queue in input_queues:
-            seeds = []
-            for _ in range(SEEDS_PER_WORKER):
-                parent = np.random.randint(PARENTS_COUNT)
-                next_seed = np.random.randint(MAX_SEED)
-                seeds.append(tuple([population[parent][0][-1], population[parent][1], next_seed]))
-            worker_queue.put(seeds)
-        gen_idx += 1
+            for worker_queue in input_queues:
+                seeds = []
+                for _ in range(SEEDS_PER_WORKER):
+                    parent = np.random.randint(PARENTS_COUNT)
+                    next_seed = np.random.randint(MAX_SEED)
+                    seeds.append(tuple([population[parent][0][-1], population[parent][1], next_seed]))
+                worker_queue.put(seeds)
+            gen_idx += 1
+        except Exception as e:
+            print("comme here")
+            logger.error(e, exc_info=True)
 
         #time.sleep(1)
         #top_parent_cache = {}
