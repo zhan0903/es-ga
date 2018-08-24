@@ -153,7 +153,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
 
         #logger.debug("before, current_process: %s,seeds:%s", mp.current_process(), population)
         population.sort(key=lambda p: p[2], reverse=True)
-        logger.debug("output queue put, current_process: %s,population:%s", mp.current_process(), population)
+        logger.debug("output queue put, current_process: %s,population:%s", mp.current_process(), population[1])
 
         for i in range(PARENTS_COUNT):
             #top_parent_cache[population[i][1][-1]] = population[i][0].state_dict()
