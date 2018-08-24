@@ -74,7 +74,7 @@ def evaluate(env, net, device="cpu"):
     obs = env.reset()
     reward = 0.0
     steps = 0
-    net_model = Net(env.observation_space.shape, env.action_space.n)
+    net_model = Net(env.observation_space.shape, env.action_space.n).to(device)
     net_model.load_state_dict(net)
 
     print("in evalue,net_model", net_model)
@@ -102,7 +102,7 @@ def mutate_net(net, seed, copy_net=True):
         value.data = NOISE_STD*noise_t
 
         # if(value.data.is_cuda):
-        #     temp = temp.cuda()
+        #      temp = temp.cuda()
         # value.data += temp
     return new_net
 
