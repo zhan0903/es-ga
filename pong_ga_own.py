@@ -90,6 +90,8 @@ def mutate_net(net, seed, copy_net=True):
     new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net:#.parameters():
+        #logger.debug("current_process: %s,p[]:%s", mp.current_process(), parents[parent])
+        print(p[1], type(p[1]))
         noise_t = torch.from_numpy(np.random.normal(size=p[1].data.size()).astype(np.float32))
         temp = NOISE_STD*noise_t
         if(p.data.is_cuda):
