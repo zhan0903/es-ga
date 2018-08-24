@@ -36,11 +36,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 
-ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-
 
 class Net(nn.Module):
     def __init__(self, input_shape, n_actions):
@@ -129,28 +124,31 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
         if parents is None:
             break
 
-        #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+        logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
         #logger.debug("current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
-
-        for net_seeds in parents:
-            if len(net_seeds) > 1:
-                #logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
-                             #net_seeds[0], top_parent_cache)
-                logger.debug("current_process:inside1,%s,net_seeds:%s", mp.current_process(), net_seeds)
-                net = Net(env.observation_space.shape, env.action_space.n)
-                #net = net_seeds[1]
-                net.load_state_dict(net_seeds[1])
-                if net is not None:
-                    net = mutate_net(net, net_seeds[-1], device).to(device)
+        try:
+            for net_seeds in parents:
+                if len(net_seeds) > 1:
+                    #logger.debug("current_process: %s,net_seeds[:-1]:%s,top_parent_cache: %s", mp.current_process(),
+                                 #net_seeds[0], top_parent_cache)
+                    logger.debug("current_process:inside1,%s,net_seeds:%s", mp.current_process(), net_seeds)
+                    net = Net(env.observation_space.shape, env.action_space.n)
+                    #net = net_seeds[1]
+                    net.load_state_dict(net_seeds[1])
+                    if net is not None:
+                        net = mutate_net(net, net_seeds[-1], device).to(device)
+                    else:
+                        assert False
+                        #net = build_net(env, net_seeds, device).to(device)
                 else:
-                    assert False
-                    #net = build_net(env, net_seeds, device).to(device)
-            else:
-                net = build_net(env, net_seeds, device).to(device)
-                logger.debug("current_process:inside2,%s", mp.current_process())
+                    net = build_net(env, net_seeds, device).to(device)
+                    logger.debug("current_process:inside2,%s", mp.current_process())
 
-            reward, steps = evaluate(env, net, device)
-            population.append((net, net_seeds, reward, steps))
+                reward, steps = evaluate(env, net, device)
+                population.append((net, net_seeds, reward, steps))
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            #raise
 
         #logger.debug("before, current_process: %s,seeds:%s", mp.current_process(), population)
         population.sort(key=lambda p: p[2], reverse=True)
