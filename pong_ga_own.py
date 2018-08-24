@@ -77,7 +77,7 @@ def evaluate(env, net, device="cpu"):
     net_model = Net(env.observation_space.shape, env.action_space.n)
     net_model.load_state_dict(net)
 
-    print("in evalue,net,net.load_state_dict",net,net.load_state_dict)
+    print("in evalue,net_model", net_model)
     while True:
         obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
         act_prob = net_model(obs_v)
