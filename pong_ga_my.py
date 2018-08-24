@@ -147,6 +147,7 @@ def worker_func(input_queue, output_queue, top_parent_cache, device="cpu"):
                 reward, steps = evaluate(env, net, device)
                 population.append((net, net_seeds, reward, steps))
         except Exception as e:
+            print("comme here")
             logger.error(e, exc_info=True)
             #raise
 
@@ -194,15 +195,20 @@ if __name__ == "__main__":
         t_start = time.time()
         batch_steps = 0
         population = []
-        while len(population) < PARENTS_COUNT * WORKERS_COUNT:
-            logger.debug("current_process:inside4,%s", mp.current_process())
-            out_item = output_queue.get()
-            logger.debug("current_process:inside5,%s", mp.current_process())
+        try:
+            while len(population) < PARENTS_COUNT * WORKERS_COUNT:
+                logger.debug("current_process:inside4,%s", mp.current_process())
+                out_item = output_queue.get()
+                logger.debug("current_process:inside5,%s", mp.current_process())
 
-            population.append((out_item.seeds, out_item.net, out_item.reward))
-            batch_steps += out_item.steps
-        if elite is not None:
-            population.append(elite)
+                population.append((out_item.seeds, out_item.net, out_item.reward))
+                batch_steps += out_item.steps
+            if elite is not None:
+                population.append(elite)
+        except Exception as e:
+            print("comme here")
+            logger.error(e, exc_info=True)
+
 
         #top_parent_cache = {}
         #logger.debug("before current_process: %s,top_parent_cache:%s", mp.current_process(), top_parent_cache)
