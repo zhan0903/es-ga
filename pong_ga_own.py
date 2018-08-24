@@ -92,7 +92,7 @@ def mutate_net(net, seed, copy_net=True):
     #for p in net:#.parameters():
     for key, value in net.items():
         #logger.debug("current_process: %s,p[]:%s", mp.current_process(), parents[parent])
-        print("key,value,value.data", key, value, value.data, type(value))
+        print("key,value,value.data", key, value, type(value))
         noise_t = torch.from_numpy(np.random.normal(size=value.data.size()).astype(np.float32))
         temp = NOISE_STD*noise_t
         if(value.data.is_cuda):
@@ -115,7 +115,7 @@ def worker_func(parents, output_queue,  device="cpu"):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
             logger.debug("current_process: %s,parents[parent]:%s", mp.current_process(), parents[parent])
-            child_net = mutate_net(parents[parent], child_seed).to(device)
+            child_net = mutate_net(parents[parent], child_seed)#.to(device)
             reward, steps = evaluate(env, child_net, device)
             child.append((child_net, reward, steps))
             #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
