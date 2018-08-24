@@ -236,9 +236,9 @@ if __name__ == "__main__":
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
-        elite = population[0]
         try:
-        #print(mp.current_process(), "population:", population)
+            print(mp.current_process(), "population:", population)
+            elite = population[0]
             for worker_queue in input_queues:
                 seeds = []
                 for _ in range(SEEDS_PER_WORKER):
