@@ -113,7 +113,7 @@ def worker_func(device_w="cpu"):
         parent = np.random.randint(PARENTS_COUNT)
         child_seed = np.random.randint(MAX_SEED)
         child_net = mutate_net(parents[parent], child_seed).to(device_w)
-        reward, steps = evaluate(new_env, child_net, device_w).to(device)
+        reward, steps = evaluate(new_env, child_net, device_w)
         batch_steps += steps
         child.append((child_net, reward))
 
