@@ -76,7 +76,7 @@ def evaluate(env, net, device="cpu"):
     steps = 0
     while True:
         obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
-        act_prob = net(obs_v)
+        act_prob = net(obs_v).to(device)
         acts = act_prob.max(dim=1)[1]
         obs, r, done, _ = env.step(acts.data.cpu().numpy()[0])
         reward += r
@@ -112,8 +112,8 @@ def worker_func(device_w="cpu"):
     for _ in range(POPULATION_SIZE):
         parent = np.random.randint(PARENTS_COUNT)
         child_seed = np.random.randint(MAX_SEED)
-        child_net = mutate_net(parents[parent], child_seed)#.to(device_w)
-        reward, steps = evaluate(new_env, child_net, device_w)
+        child_net = mutate_net(parents[parent], child_seed).to(device_w)
+        reward, steps = evaluate(new_env, child_net, device_w).to(device)
         batch_steps += steps
         child.append((child_net, reward))
 
