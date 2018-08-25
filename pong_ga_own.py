@@ -111,7 +111,7 @@ def worker_func(parents, output_queue,  device="cpu"):
 
     while True:
         child = []
-        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0])
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
@@ -162,7 +162,7 @@ if __name__ == "__main__":
         batch_steps = 0
         children = []
 
-        logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0])
 
         while len(children) < PARENTS_COUNT * WORKERS_COUNT:
             out_item = output_queue.get()
