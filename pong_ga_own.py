@@ -30,7 +30,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -43,10 +43,10 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            nn.ReLU()
+            # nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            # nn.ReLU()
         )
 
         conv_out_size = self._get_conv_out(input_shape)
@@ -90,11 +90,11 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(net, seed, copy_net=True):
-    new_net = copy.deepcopy(net) if copy_net else net
-    np.random.seed(seed)
+def mutate_net(parent, child_seed, copy_net=True):
+    new_net = copy.deepcopy(parent) if copy_net else net
+    np.random.seed(child_seed)
     #for p in net:#.parameters():
-    for key, value in net.items():
+    for key, value in new_net.items():
         #logger.debug("current_process: %s,p[]:%s", mp.current_process(), parents[parent])
         #print("key,value,value.data", key, value, type(value))
         noise_t = torch.from_numpy(np.random.normal(size=value.data.size()).astype(np.float32))
@@ -115,12 +115,22 @@ def build_net(env, seeds, device="cpu"):
 
 def worker_func(parents, output_queue,  device="cpu"):
     env = make_env()
+    #logger.debug("current_process: %s,parents[0]:%s", mp.current_process(), parents[0])
+    guide = False
+    temp = parents[0]
+
     while True:
         child = []
+        #logger.debug("len of parents:%s", len(parents))
+        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+
+        # if guide:
+        #     assert temp == parents[0]
+        #     guide = not guide
+
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
-            #logger.debug("current_process: %s,parents[parent]:%s", mp.current_process(), parents[parent])
             child_net = mutate_net(parents[parent], child_seed)#.to(device)
             reward, steps = evaluate(env, child_net, device)
             child.append((child_net, reward, steps))
@@ -128,8 +138,8 @@ def worker_func(parents, output_queue,  device="cpu"):
 
         child.sort(key=lambda p: p[1], reverse=True)
 
-        for i in range(PARENTS_COUNT):
-            output_queue.put(child[i])
+        for j in range(PARENTS_COUNT):
+            output_queue.put(child[j])
 
 
 if __name__ == "__main__":
@@ -141,7 +151,8 @@ if __name__ == "__main__":
     device = "cuda:1" if args.cuda else "cpu"
 
     env = make_env()
-    parents = []
+    manager = mp.Manager()
+    parents = manager.list()
 
     #create PARENTS_COUNT parents
     for i in range(PARENTS_COUNT):
@@ -156,6 +167,7 @@ if __name__ == "__main__":
     workers = []
     time_start = time.time()
 
+
     for _ in range(WORKERS_COUNT):
         w = mp.Process(target=worker_func, args=(parents, output_queue, device))
         w.start()
@@ -165,6 +177,8 @@ if __name__ == "__main__":
         t_start = time.time()
         batch_steps = 0
         children = []
+
+        logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
         while len(children) < PARENTS_COUNT * WORKERS_COUNT:
             out_item = output_queue.get()
@@ -189,5 +203,9 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         for i in range(PARENTS_COUNT):
-            parents[i] = children[i]
+            parents[i] = children[i][0]
+        #logger.debug("current_process: %s,parents[0]:%s", mp.current_process(), parents[0])
+        logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+
+
         gen_idx += 1
