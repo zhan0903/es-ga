@@ -30,7 +30,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -100,30 +100,36 @@ def mutate_net(parent, child_seed, copy_net=True):
     return new_net
 
 
+OutputItem = collections.namedtuple('OutputItem', field_names=['child_net', 'reward', 'steps'])
+
+
 def build_net(env, seeds, device="cpu"):
     torch.manual_seed(seeds)
     net = Net(env.observation_space.shape, env.action_space.n)
     return net
 
 
-def worker_func(parents, output_queue,  device="cpu"):
+def worker_func(input_queue_w, output_queue_w,  device_w="cpu"):
     new_env = make_env()
 
     while True:
+        parents_w = input_queue_w.get()
         child = []
-        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents_w[0]['fc.2.bias'])
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(parents[parent], child_seed)#.to(device)
-            reward, steps = evaluate(new_env, child_net, device)
+            child_net = mutate_net(parents_w[parent], child_seed)#.to(device_w)
+            reward, steps = evaluate(new_env, child_net, device_w)
             child.append((child_net, reward, steps))
+            #output_queue_w.put(OutputItem(child_net=child_net, reward=reward, steps=steps))
+
             #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
 
         child.sort(key=lambda p: p[1], reverse=True)
 
         for j in range(PARENTS_COUNT):
-            output_queue.put(child[j])
+            output_queue_w.put(OutputItem(child_net=child[j][0], reward=child[j][1], steps=child[j][2]))
 
 
 if __name__ == "__main__":
@@ -135,14 +141,15 @@ if __name__ == "__main__":
     device = "cuda:1" if args.cuda else "cpu"
 
     env = make_env()
-    manager = mp.Manager()
-    parents = manager.list()
+    #manager = mp.Manager()
+    parents = []
+    input_queues = []
 
     #create PARENTS_COUNT parents
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
         net = build_net(env, seed)#.to(device)
-        net.share_memory()
+        #net.share_memory()
         parents.append(net.state_dict())
         #parents[seed] = net
 
@@ -151,10 +158,12 @@ if __name__ == "__main__":
     workers = []
     time_start = time.time()
 
-
     for _ in range(WORKERS_COUNT):
-        w = mp.Process(target=worker_func, args=(parents, output_queue, device))
+        input_queue = mp.Queue(maxsize=1)
+        input_queues.append(input_queue)
+        w = mp.Process(target=worker_func, args=(input_queue, output_queue, device))
         w.start()
+        input_queue.put(parents)
 
     gen_idx = 0
     while True:
@@ -166,8 +175,8 @@ if __name__ == "__main__":
 
         while len(children) < PARENTS_COUNT * WORKERS_COUNT:
             out_item = output_queue.get()
-            children.append(out_item)
-            batch_steps += out_item[2]
+            children.append((out_item.child_net, out_item.reward))
+            batch_steps += out_item.steps
 
         children.sort(key=lambda p: p[1], reverse=True)
 
@@ -187,8 +196,11 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         for i in range(PARENTS_COUNT):
+            #print("children[i][0]", children[i][0])
             parents[i] = children[i][0]
-        logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
+        for worker_queue in input_queues:
+            worker_queue.put(parents)
+        logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
         gen_idx += 1
