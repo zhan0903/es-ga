@@ -12,7 +12,7 @@ import logging
 
 import torch
 import torch.nn as nn
-import torch.multiprocessing as mp
+# import torch.multiprocessing as mp
 
 from tensorboardX import SummaryWriter
 
@@ -30,7 +30,7 @@ CHILDREN_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -74,13 +74,9 @@ def evaluate(env, net, device="cpu"):
     obs = env.reset()
     reward = 0.0
     steps = 0
-    net_model = Net(env.observation_space.shape, env.action_space.n).to(device)
-    net_model.load_state_dict(net)
-
-    #print("in evalue,net_model", net_model)
     while True:
         obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
-        act_prob = net_model(obs_v).to(device)
+        act_prob = net(obs_v)
         acts = act_prob.max(dim=1)[1]
         obs, r, done, _ = env.step(acts.data.cpu().numpy()[0])
         reward += r
@@ -90,13 +86,12 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(parent, child_seed, copy_net=True):
-    new_net = copy.deepcopy(parent) if copy_net else net
-    np.random.seed(child_seed)
-    #for p in net:#.parameters():
-    for key, value in new_net.items():
-        noise_t = torch.from_numpy(np.random.normal(size=value.data.size()).astype(np.float32))
-        value.data = NOISE_STD*noise_t
+def mutate_net(net, seed, copy_net=True):
+    new_net = copy.deepcopy(net) if copy_net else net
+    np.random.seed(seed)
+    for p in new_net.parameters():
+        noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32))
+        p.data += NOISE_STD * noise_t
     return new_net
 
 
@@ -109,31 +104,28 @@ def build_net(env, seeds, device="cpu"):
     return net
 
 
-def worker_func(input_queue_w, output_queue_w,  device_w="cpu"):
+def worker_func(device_w="cpu"):
     new_env = make_env()
+    batch_steps = 0
+    child = []
 
-    while True:
-        parents_w = input_queue_w.get()
-        child = []
-        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents_w[0]['fc.2.bias'])
-        for _ in range(CHILDREN_PER_WORKER):
-            parent = np.random.randint(PARENTS_COUNT)
-            child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(parents_w[parent], child_seed)#.to(device_w)
-            reward, steps = evaluate(new_env, child_net, device_w)
-            child.append((child_net, reward, steps))
-            #output_queue_w.put(OutputItem(child_net=child_net, reward=reward, steps=steps))
+    for _ in range(POPULATION_SIZE):
+        parent = np.random.randint(PARENTS_COUNT)
+        child_seed = np.random.randint(MAX_SEED)
+        child_net = mutate_net(parents[parent], child_seed)#.to(device_w)
+        reward, steps = evaluate(new_env, child_net, device_w)
+        batch_steps += steps
+        child.append((child_net, reward))
 
-            #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
+    child.sort(key=lambda p: p[1], reverse=True)
 
-        child.sort(key=lambda p: p[1], reverse=True)
+    return child, batch_steps
 
-        for j in range(PARENTS_COUNT):
-            output_queue_w.put(OutputItem(child_net=child[j][0], reward=child[j][1], steps=child[j][2]))
 
+parents = []
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')
+    #mp.set_start_method('spawn')
     writer = SummaryWriter(comment="-pong-ga")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
@@ -142,28 +134,28 @@ if __name__ == "__main__":
 
     env = make_env()
     #manager = mp.Manager()
-    parents = []
-    input_queues = []
+    #parents = []
+    # input_queues = []
 
     #create PARENTS_COUNT parents
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
         net = build_net(env, seed)#.to(device)
         #net.share_memory()
-        parents.append(net.state_dict())
+        parents.append(net)
         #parents[seed] = net
 
-    input_queues = []
-    output_queue = mp.Queue(maxsize=WORKERS_COUNT)
-    workers = []
+    # input_queues = []
+    # output_queue = mp.Queue(maxsize=WORKERS_COUNT)
+    # workers = []
     time_start = time.time()
 
-    for _ in range(WORKERS_COUNT):
-        input_queue = mp.Queue(maxsize=1)
-        input_queues.append(input_queue)
-        w = mp.Process(target=worker_func, args=(input_queue, output_queue, device))
-        w.start()
-        input_queue.put(parents)
+    # for _ in range(WORKERS_COUNT):
+    #     input_queue = mp.Queue(maxsize=1)
+    #     input_queues.append(input_queue)
+    #     w = mp.Process(target=worker_func, args=(input_queue, output_queue, device))
+    #     w.start()
+    #     input_queue.put(parents)
 
     gen_idx = 0
     while True:
@@ -171,14 +163,7 @@ if __name__ == "__main__":
         batch_steps = 0
         children = []
 
-        logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
-
-        while len(children) < PARENTS_COUNT * WORKERS_COUNT:
-            out_item = output_queue.get()
-            children.append((out_item.child_net, out_item.reward))
-            batch_steps += out_item.steps
-
-        children.sort(key=lambda p: p[1], reverse=True)
+        children, batch_steps = worker_func(device)
 
         rewards = [p[1] for p in children[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
@@ -196,11 +181,10 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         for i in range(PARENTS_COUNT):
-            #print("children[i][0]", children[i][0])
             parents[i] = children[i][0]
 
-        for worker_queue in input_queues:
-            worker_queue.put(parents)
-        logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        # for worker_queue in input_queues:
+        #         #     worker_queue.put(parents)
+        #logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
         gen_idx += 1
