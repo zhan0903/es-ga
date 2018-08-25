@@ -162,7 +162,7 @@ if __name__ == "__main__":
         batch_steps = 0
         children = []
 
-        logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        #logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
         while len(children) < PARENTS_COUNT * WORKERS_COUNT:
             out_item = output_queue.get()
