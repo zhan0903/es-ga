@@ -141,7 +141,7 @@ if __name__ == "__main__":
     #create PARENTS_COUNT parents
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
-        net = build_net(env, seed).to(device)
+        net = build_net(env, seed)#.to(device)
         net.share_memory()
         parents.append(net.state_dict())
         #parents[seed] = net
