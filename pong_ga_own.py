@@ -43,10 +43,10 @@ class Net(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
             nn.ReLU(),
-            # nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            # nn.ReLU(),
-            # nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            # nn.ReLU()
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.ReLU()
         )
 
         conv_out_size = self._get_conv_out(input_shape)
@@ -95,15 +95,8 @@ def mutate_net(parent, child_seed, copy_net=True):
     np.random.seed(child_seed)
     #for p in net:#.parameters():
     for key, value in new_net.items():
-        #logger.debug("current_process: %s,p[]:%s", mp.current_process(), parents[parent])
-        #print("key,value,value.data", key, value, type(value))
         noise_t = torch.from_numpy(np.random.normal(size=value.data.size()).astype(np.float32))
-        #temp = NOISE_STD*noise_t
         value.data = NOISE_STD*noise_t
-
-        # if(value.data.is_cuda):
-        #      temp = temp.cuda()
-        # value.data += temp
     return new_net
 
 
@@ -114,25 +107,16 @@ def build_net(env, seeds, device="cpu"):
 
 
 def worker_func(parents, output_queue,  device="cpu"):
-    env = make_env()
-    #logger.debug("current_process: %s,parents[0]:%s", mp.current_process(), parents[0])
-    guide = False
-    temp = parents[0]
+    new_env = make_env()
 
     while True:
         child = []
-        #logger.debug("len of parents:%s", len(parents))
-        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
-
-        # if guide:
-        #     assert temp == parents[0]
-        #     guide = not guide
-
+        #logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
             child_net = mutate_net(parents[parent], child_seed)#.to(device)
-            reward, steps = evaluate(env, child_net, device)
+            reward, steps = evaluate(new_env, child_net, device)
             child.append((child_net, reward, steps))
             #logger.debug("current_process: %s,parents:%s", mp.current_process(), parents)
 
@@ -204,8 +188,7 @@ if __name__ == "__main__":
 
         for i in range(PARENTS_COUNT):
             parents[i] = children[i][0]
-        #logger.debug("current_process: %s,parents[0]:%s", mp.current_process(), parents[0])
-        logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        #logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
 
         gen_idx += 1
