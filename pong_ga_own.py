@@ -30,7 +30,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -111,7 +111,7 @@ def worker_func(parents, output_queue,  device="cpu"):
 
     while True:
         child = []
-        #logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        logger.debug("current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
@@ -162,7 +162,7 @@ if __name__ == "__main__":
         batch_steps = 0
         children = []
 
-        #logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        logger.debug("before, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
         while len(children) < PARENTS_COUNT * WORKERS_COUNT:
             out_item = output_queue.get()
@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
         for i in range(PARENTS_COUNT):
             parents[i] = children[i][0]
-        #logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
+        logger.debug("after, current_process: %s,parents[0][0]:%s", mp.current_process(), parents[0]['fc.2.bias'])
 
 
         gen_idx += 1
