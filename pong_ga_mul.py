@@ -193,14 +193,15 @@ if __name__ == "__main__":
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
+        new_parents = []
         for i in range(PARENTS_COUNT):
-            parents[i] = children[i][0]
+            new_parents.append(children[i][0])#[i] = copy.deepcopy(children[i][0])
 
-        elite = parents[0]
+        elite = new_parents[0]
 
         for worker_queue in input_queues:
-            worker_queue.put(parents)
-        logger.debug("after, current_process: {0},parents[0][0]:{1},len of parents:{2}, type of parents:{3}".format(mp.current_process(),
-                     parents[0]['fc.2.bias'], len(parents), type(parents)))
+            worker_queue.put(new_parents)
+        logger.debug("after, current_process: {0},new_parents[0][0]:{1},len of new_parents:{2}, type of new_parents:{3}".
+                     format(mp.current_process(), new_parents[0]['fc.2.bias'], len(new_parents), type(new_parents)))
 
         gen_idx += 1
