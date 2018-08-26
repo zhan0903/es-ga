@@ -173,9 +173,9 @@ if __name__ == "__main__":
         if elite is not None:
             children.append(elite)
 
-        logger.debug("current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
-                                                                                parents[0]['fc.2.bias'],
-                                                                                len(parents)))
+        #logger.debug("current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
+        #                                                                        parents[0]['fc.2.bias'],
+        #                                                                        len(parents)))
         #children, batch_steps = worker_func(device)
 
         rewards = [p[1] for p in children[:PARENTS_COUNT]]
