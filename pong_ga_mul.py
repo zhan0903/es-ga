@@ -111,7 +111,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     while True:
         parents_w = input_queue.get()
         child = []
-        logger.debug("current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
+        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
                                                                                                 parents_w[0]['fc.2.bias'], len(parents_w)))
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
@@ -157,7 +157,8 @@ if __name__ == "__main__":
         w.start()
         input_queue.put(parents)
 
-    logger.debug("before, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], len(parents)))
+    logger.debug("before, current_process: {0},parents[0][0]:{1},len of parents:{2}, type of parents:{3}".
+                 format(mp.current_process(), parents[0]['fc.2.bias'], len(parents), type(parents)))
     gen_idx = 0
     elite = None
     while True:
@@ -168,7 +169,6 @@ if __name__ == "__main__":
         while len(children) < WORKERS_COUNT * PARENTS_COUNT:
             out_item = output_queue.get()
             children.append((out_item.child_net, out_item.reward))
-            logger.debug("inside,len(children):{0}".format(len(children)))
             batch_steps += out_item.steps
         if elite is not None:
             children.append(elite)
@@ -197,9 +197,10 @@ if __name__ == "__main__":
             parents[i] = children[i][0]
 
         elite = parents[0]
+
         for worker_queue in input_queues:
             worker_queue.put(parents)
-        logger.debug("after, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
-                     parents[0]['fc.2.bias'], len(parents)))
+        logger.debug("after, current_process: {0},parents[0][0]:{1},len of parents:{2}, type of parents:{3}".format(mp.current_process(),
+                     parents[0]['fc.2.bias'], len(parents), type(parents)))
 
         gen_idx += 1
