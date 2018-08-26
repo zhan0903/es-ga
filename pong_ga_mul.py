@@ -134,7 +134,7 @@ if __name__ == "__main__":
         seed = np.random.randint(MAX_SEED)
         net = build_net(env, seed).to(device)
         #net.share_memory()
-        parents.append(net)
+        parents.append(net.state_dict())
         #parents[seed] = net
 
     input_queues = []
