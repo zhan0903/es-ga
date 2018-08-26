@@ -87,7 +87,9 @@ def evaluate(env, net, device="cpu"):
 
 
 def mutate_net(net, seed, copy_net=True):
-    new_net = copy.deepcopy(net) if copy_net else net
+    new_net = Net(env.observation_space.shape, env.action_space.n)
+    new_net.load_state_dict(net)
+    #new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
         noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32))#.cuda()
