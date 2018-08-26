@@ -86,7 +86,7 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(net, seed, copy_net=True):
+def mutate_net(env, net, seed, copy_net=True):
     new_net = Net(env.observation_space.shape, env.action_space.n)
     new_net.load_state_dict(net)
     #new_net = copy.deepcopy(net) if copy_net else net
@@ -114,7 +114,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         for _ in range(POPULATION_SIZE):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(parents[parent], child_seed).to(device_w)
+            child_net = mutate_net(new_env, parents[parent], child_seed).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
             child.append((child_net, reward, steps))
         child.sort(key=lambda p: p[1], reverse=True)
