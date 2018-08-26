@@ -119,7 +119,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             child.append((child_net, reward, steps))
         child.sort(key=lambda p: p[1], reverse=True)
         for i in range(PARENTS_COUNT):
-            output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=child[i][2]))
+            output_queue.put(OutputItem(child_net=child[i][0].state_dict(), reward=child[i][1], steps=child[i][2]))
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
