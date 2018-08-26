@@ -20,7 +20,7 @@ from tensorboardX import SummaryWriter
 # POPULATION_SIZE = 600
 # PARENTS_COUNT = 10
 # WORKERS_COUNT = 6
-POPULATION_SIZE = 8
+POPULATION_SIZE = 4
 PARENTS_COUNT = 2
 WORKERS_COUNT = 2
 
@@ -111,7 +111,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     while True:
         parents_w = input_queue.get()
         child = []
-        logger.debug("before, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
+        logger.debug("current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
                                                                                                 parents_w[0]['fc.2.bias'], len(parents_w)))
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
@@ -120,12 +120,12 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             reward, steps = evaluate(new_env, child_net, device_w)
             child.append((child_net.state_dict(), reward, steps))
         child.sort(key=lambda p: p[1], reverse=True)
-        logger.debug("middle, current_process: {0},child[0][1]:{1},child[0][2]:{2},len of "
-                     "child:{3}".format(mp.current_process(), child[0][1], child[0][2], len(child)))
-
+        #logger.debug("middle, current_process: {0},child[0][1]:{1},child[0][2]:{2},len of "
+        #             "child:{3}".format(mp.current_process(), child[0][1], child[0][2], len(child)))
         for i in range(PARENTS_COUNT):
             #output_queue.put(child[i])
             output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=child[i][2]))
+
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
@@ -173,9 +173,9 @@ if __name__ == "__main__":
         if elite is not None:
             children.append(elite)
 
-        logger.debug("middle, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
-                                                                                                parents[0]['fc.2.bias'],
-                                                                                                len(parents)))
+        logger.debug("current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
+                                                                                parents[0]['fc.2.bias'],
+                                                                                len(parents)))
         #children, batch_steps = worker_func(device)
 
         rewards = [p[1] for p in children[:PARENTS_COUNT]]
