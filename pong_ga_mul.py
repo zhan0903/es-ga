@@ -108,18 +108,24 @@ def build_net(env, seeds, device="cpu"):
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
-    child = []
     while True:
-        parents = input_queue.get()
-        for _ in range(POPULATION_SIZE):
+        parents_w = input_queue.get()
+        child = []
+        logger.debug("before, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
+                                                                                                parents_w[0]['fc.2.bias'], len(parents_w)))
+        for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(new_env, parents[parent], child_seed).to(device_w)
+            child_net = mutate_net(new_env, parents_w[parent], child_seed).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
-            child.append((child_net, reward, steps))
+            child.append((child_net.state_dict(), reward, steps))
         child.sort(key=lambda p: p[1], reverse=True)
+        logger.debug("middle, current_process: {0},child[0][1]:{1},child[0][2]:{2},len of "
+                     "child:{3}".format(mp.current_process(), child[0][1], child[0][2], len(child)))
+
         for i in range(PARENTS_COUNT):
-            output_queue.put(OutputItem(child_net=child[i][0].state_dict(), reward=child[i][1], steps=child[i][2]))
+            #output_queue.put(child[i])
+            output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=child[i][2]))
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
@@ -151,20 +157,25 @@ if __name__ == "__main__":
         w.start()
         input_queue.put(parents)
 
+    logger.debug("before, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], len(parents)))
     gen_idx = 0
     elite = None
     while True:
         t_start = time.time()
         batch_steps = 0
         children = []
-        while len(children) < SEEDS_PER_WORKER * WORKERS_COUNT:
+
+        while len(children) < WORKERS_COUNT * PARENTS_COUNT:
             out_item = output_queue.get()
             children.append((out_item.child_net, out_item.reward))
+            logger.debug("inside,len(children):{0}".format(len(children)))
             batch_steps += out_item.steps
         if elite is not None:
             children.append(elite)
 
-
+        logger.debug("middle, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
+                                                                                                parents[0]['fc.2.bias'],
+                                                                                                len(parents)))
         #children, batch_steps = worker_func(device)
 
         rewards = [p[1] for p in children[:PARENTS_COUNT]]
@@ -189,6 +200,6 @@ if __name__ == "__main__":
         for worker_queue in input_queues:
             worker_queue.put(parents)
         logger.debug("after, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
-                     parents[0].state_dict()['fc.2.bias'], len(parents)))
+                     parents[0]['fc.2.bias'], len(parents)))
 
         gen_idx += 1
