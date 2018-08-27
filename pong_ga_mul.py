@@ -159,7 +159,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
-    device = "cuda:1" if args.cuda else "cpu"
+    device = "cuda" if args.cuda else "cpu"
 
     env = make_env()
     #create PARENTS_COUNT parents
