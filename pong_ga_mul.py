@@ -18,7 +18,7 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 800
+POPULATION_SIZE = 1000
 PARENTS_COUNT = 20
 WORKERS_COUNT = 10
 # POPULATION_SIZE = 4
@@ -120,13 +120,12 @@ def rand_pick(seq, probabilities):
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
-    # parent_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    # pro_list = [0.3, 0.2, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
-    parent_list = [0, 1]
+    parent_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    #parent_list = [0, 1]
 
     while True:
         get_item = input_queue.get()
-        parents_w = copy.deepcopy(get_item[0])
+        parents_w = get_item[0]
         pro_list = get_item[1]
 
         batch_steps_w = 0
