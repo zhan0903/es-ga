@@ -108,8 +108,13 @@ def build_net(env, seeds, device="cpu"):
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
+    parents_cache = []
     while True:
-        parents_w = input_queue.get()
+        parents_t = input_queue.get()
+        if parents_t == 1:
+            parents_w = parents_cache
+        else:
+            parents_w = parents_t
         child = []
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
                                                                                                 parents_w[0]['fc.2.bias'], len(parents_w)))
@@ -141,8 +146,9 @@ if __name__ == "__main__":
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
         net = build_net(env, seed).to(device)
-        #net.share_memory()
-        parents.append(net.state_dict())
+        parents.append((net.state_dict()))
+        #parents.append((seed, net.state_dict()))
+
         #parents[seed] = net
 
     input_queues = []
@@ -157,14 +163,15 @@ if __name__ == "__main__":
         w.start()
         input_queue.put(parents)
 
-    logger.debug("before, current_process: {0},parents[0][0]:{1},len of parents:{2}, type of parents:{3}".
-                 format(mp.current_process(), parents[0]['fc.2.bias'], len(parents), type(parents)))
+    logger.debug("Before++++, current_process: {0},parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, len of parents:{3}, type of parents:{4}".
+                 format(mp.current_process(), parents[0]['fc.2.bias'], parents[1]['fc.2.bias'], len(parents), type(parents)))
     gen_idx = 0
     elite = None
     while True:
         t_start = time.time()
         batch_steps = 0
         children = []
+        a = 2
 
         while len(children) < WORKERS_COUNT * PARENTS_COUNT:
             out_item = output_queue.get()
@@ -200,8 +207,11 @@ if __name__ == "__main__":
         elite = new_parents[0]
 
         for worker_queue in input_queues:
-            worker_queue.put(new_parents)
-        logger.debug("after, current_process: {0},new_parents[0][0]:{1},len of new_parents:{2}, type of new_parents:{3}".
-                     format(mp.current_process(), new_parents[0]['fc.2.bias'], len(new_parents), type(new_parents)))
+            if False:
+                worker_queue.put(1)
+            else:
+                worker_queue.put(new_parents)
+        logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, len of new_parents:{3}, type of new_parents:{4}".
+                     format(mp.current_process(), new_parents[0]['fc.2.bias'], new_parents[1]['fc.2.bias'], len(new_parents), type(new_parents)))
 
         gen_idx += 1
