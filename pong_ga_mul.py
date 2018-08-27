@@ -17,12 +17,12 @@ import torch.multiprocessing as mp
 from tensorboardX import SummaryWriter
 
 
-# POPULATION_SIZE = 600
-# PARENTS_COUNT = 10
-# WORKERS_COUNT = 6
-POPULATION_SIZE = 4
-PARENTS_COUNT = 2
-WORKERS_COUNT = 2
+POPULATION_SIZE = 600
+PARENTS_COUNT = 10
+WORKERS_COUNT = 6
+# POPULATION_SIZE = 4
+# PARENTS_COUNT = 2
+# WORKERS_COUNT = 2
 
 
 NOISE_STD = 0.01
@@ -30,7 +30,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -108,16 +108,11 @@ def build_net(env, seeds, device="cpu"):
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
-    #parents_cache = []
     while True:
         parents_w = input_queue.get()
-        # if parents_t == 1:
-        #     parents_w = parents_cache
-        # else:
-        #     parents_w = copy.deepcopy(parents_t)
         child = []
-        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
-                                                                                                parents_w[0]['fc.2.bias'], len(parents_w)))
+        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".
+                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w)))
         for _ in range(SEEDS_PER_WORKER):
             parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
@@ -147,9 +142,6 @@ if __name__ == "__main__":
         seed = np.random.randint(MAX_SEED)
         net = build_net(env, seed).to(device)
         parents.append((net.state_dict()))
-        #parents.append((seed, net.state_dict()))
-
-        #parents[seed] = net
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
@@ -171,7 +163,6 @@ if __name__ == "__main__":
         t_start = time.time()
         batch_steps = 0
         children = []
-        a = 2
 
         while len(children) < WORKERS_COUNT * PARENTS_COUNT:
             out_item = output_queue.get()
@@ -179,11 +170,6 @@ if __name__ == "__main__":
             batch_steps += out_item.steps
         if elite is not None:
             children.append(elite)
-
-        #logger.debug("current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
-        #                                                                        parents[0]['fc.2.bias'],
-        #                                                                        len(parents)))
-        #children, batch_steps = worker_func(device)
 
         rewards = [p[1] for p in children[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
