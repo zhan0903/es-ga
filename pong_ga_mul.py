@@ -120,8 +120,11 @@ def rand_pick(seq, probabilities):
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
-    parent_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    parent_list = []
+    for i in range(PARENTS_COUNT):
+        parent_list.append(i)
     #parent_list = [0, 1]
+    logger.debug("in work_func,current_process: {0},parent_list:{1}".format(mp.current_process(), parent_list))
 
     while True:
         get_item = input_queue.get()
@@ -130,8 +133,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
         batch_steps_w = 0
         child = []
-        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".
-                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w)))
+        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}".
+                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
         for _ in range(SEEDS_PER_WORKER):
             #random = np.random.uniform()
             parent = rand_pick(parent_list, pro_list)
@@ -231,7 +234,8 @@ if __name__ == "__main__":
         elite = top_children[0]
 
         for i in range(PARENTS_COUNT):
-            next_parents.append(copy.deepcopy(top_children[i][0]))
+            next_parents.append(top_children[i][0])
+            #next_parents.append(copy.deepcopy(top_children[i][0]))
 
         #next_parents = copy.deepcopy(top_children[:PARENTS_COUNT][0])
 
