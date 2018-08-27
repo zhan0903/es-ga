@@ -137,7 +137,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
                      format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
         for _ in range(SEEDS_PER_WORKER):
             #random = np.random.uniform()
-            parent = rand_pick(parent_list, pro_list)
+            parent = np.random.choice(parent_list, p=pro_list)
+            #parent = rand_pick(parent_list, pro_list)
             #parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
             child_net = mutate_net(new_env, parents_w[parent], child_seed).to(device_w)
