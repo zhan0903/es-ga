@@ -235,8 +235,8 @@ if __name__ == "__main__":
         elite = top_children[0]
 
         for i in range(PARENTS_COUNT):
-            next_parents.append(top_children[i][0])
-            #next_parents.append(copy.deepcopy(top_children[i][0]))
+            #deep copy solve the invalid device bug
+            next_parents.append(copy.deepcopy(top_children[i][0]))
 
         #next_parents = copy.deepcopy(top_children[:PARENTS_COUNT][0])
 
@@ -249,5 +249,4 @@ if __name__ == "__main__":
                      "len of new_parents:{3}, type of new_parents:{4}".
                      format(mp.current_process(), next_parents[0]['fc.2.bias'], next_parents[1]['fc.2.bias'],
                             len(next_parents), type(next_parents)))
-
         gen_idx += 1
