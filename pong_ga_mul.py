@@ -114,7 +114,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         if parents_t == 1:
             parents_w = parents_cache
         else:
-            parents_w = parents_t
+            parents_w = copy.deepcopy(parents_t)
         child = []
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
                                                                                                 parents_w[0]['fc.2.bias'], len(parents_w)))
