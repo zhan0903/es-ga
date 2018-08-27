@@ -157,23 +157,24 @@ if __name__ == "__main__":
         w.start()
         input_queue.put(parents)
 
-    logger.debug("Before++++, current_process: {0},parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, len of parents:{3}, type of parents:{4}".
-                 format(mp.current_process(), parents[0]['fc.2.bias'], parents[1]['fc.2.bias'], len(parents), type(parents)))
+    logger.debug("Before++++, current_process: {0},parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
+                 "len of parents:{3}, type of parents:{4}".format(mp.current_process(), parents[0]['fc.2.bias'],
+                                                                  parents[1]['fc.2.bias'], len(parents), type(parents)))
     gen_idx = 0
     elite = None
     while True:
         t_start = time.time()
         batch_steps = 0
-        children = []
+        top_children = []
 
-        while len(children) < WORKERS_COUNT * PARENTS_COUNT:
+        while len(top_children) < WORKERS_COUNT * PARENTS_COUNT:
             out_item = output_queue.get()
-            children.append((out_item.child_net, out_item.reward))
+            top_children.append((out_item.child_net, out_item.reward))
             batch_steps += out_item.steps
         if elite is not None:
-            children.append(elite)
+            top_children.append(elite)
 
-        rewards = [p[1] for p in children[:PARENTS_COUNT]]
+        rewards = [p[1] for p in top_children]
         reward_mean = np.mean(rewards)
         reward_max = np.max(rewards)
         reward_std = np.std(rewards)
@@ -188,18 +189,26 @@ if __name__ == "__main__":
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
-        new_parents = []
-        for i in range(PARENTS_COUNT):
-            new_parents.append(children[i][0])#[i] = copy.deepcopy(children[i][0])
+        # next_parents = []
+        # for i in range(PARENTS_COUNT):
+        #     next_parents[i] = copy.deepcopy(top_children[:PARENTS_COUNT])
+        #     new_parents.append(children[i][0])#[i] = copy.deepcopy(children[i][0])
 
-        elite = new_parents[0]
-        next_parents = copy.deepcopy(new_parents)
+        next_parents = []
+        elite = top_children[0]
+
+        for i in range(PARENTS_COUNT):
+            next_parents.append(copy.deepcopy(top_children[i][0]))
+
+        #next_parents = copy.deepcopy(top_children[:PARENTS_COUNT][0])
+        logger.debug("type of next_parents[0],children[0], len of next_parents,top_children", type(next_parents[0]),
+                     len(next_parents), type(top_children[0]), len(top_children))
 
         for worker_queue in input_queues:
             worker_queue.put(next_parents)
         logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
                      "len of new_parents:{3}, type of new_parents:{4}".
-                     format(mp.current_process(), new_parents[0]['fc.2.bias'], new_parents[1]['fc.2.bias'],
-                            len(new_parents), type(new_parents)))
+                     format(mp.current_process(), next_parents[0]['fc.2.bias'], next_parents[1]['fc.2.bias'],
+                            len(next_parents), type(next_parents)))
 
         gen_idx += 1
