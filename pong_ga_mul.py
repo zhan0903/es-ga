@@ -108,13 +108,13 @@ def build_net(env, seeds, device="cpu"):
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
-    parents_cache = []
+    #parents_cache = []
     while True:
-        parents_t = input_queue.get()
-        if parents_t == 1:
-            parents_w = parents_cache
-        else:
-            parents_w = copy.deepcopy(parents_t)
+        parents_w = input_queue.get()
+        # if parents_t == 1:
+        #     parents_w = parents_cache
+        # else:
+        #     parents_w = copy.deepcopy(parents_t)
         child = []
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".format(mp.current_process(),
                                                                                                 parents_w[0]['fc.2.bias'], len(parents_w)))
@@ -208,11 +208,10 @@ if __name__ == "__main__":
         next_parents = copy.deepcopy(new_parents)
 
         for worker_queue in input_queues:
-            if False:
-                worker_queue.put(1)
-            else:
-                worker_queue.put(next_parents)
-        logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, len of new_parents:{3}, type of new_parents:{4}".
-                     format(mp.current_process(), new_parents[0]['fc.2.bias'], new_parents[1]['fc.2.bias'], len(new_parents), type(new_parents)))
+            worker_queue.put(next_parents)
+        logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
+                     "len of new_parents:{3}, type of new_parents:{4}".
+                     format(mp.current_process(), new_parents[0]['fc.2.bias'], new_parents[1]['fc.2.bias'],
+                            len(new_parents), type(new_parents)))
 
         gen_idx += 1
