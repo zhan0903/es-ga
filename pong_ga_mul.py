@@ -30,7 +30,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -106,8 +106,23 @@ def build_net(env, seeds, device="cpu"):
     return net
 
 
+def rand_pick(seq, probabilities):
+    x = np.random.uniform(0 ,1)
+    cum_prob = 0.0
+    for item, item_pro in zip(seq, probabilities):
+        cum_prob += item_pro
+        if x < cum_prob:
+            break
+    return item
+
+
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
+    parent_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    pro_list = [0.3, 0.2, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+    #parent_list = [0, 1]
+    #pro_list = [0.6, 0.4]
+
     while True:
         parents_w = input_queue.get()
         batch_steps_w = 0
@@ -115,7 +130,9 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".
                      format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w)))
         for _ in range(SEEDS_PER_WORKER):
-            parent = np.random.randint(PARENTS_COUNT)
+            #random = np.random.uniform()
+            parent = rand_pick(parent_list, pro_list)
+            #parent = np.random.randint(PARENTS_COUNT)
             child_seed = np.random.randint(MAX_SEED)
             child_net = mutate_net(new_env, parents_w[parent], child_seed).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
@@ -201,8 +218,9 @@ if __name__ == "__main__":
             next_parents.append(copy.deepcopy(top_children[i][0]))
 
         #next_parents = copy.deepcopy(top_children[:PARENTS_COUNT][0])
-        logger.debug("type of next_parents[0],children[0], len of next_parents,top_children", type(next_parents[0]),
-                     len(next_parents), type(top_children[0]), len(top_children))
+
+        #logger.debug("type of next_parents[0],children[0], len of next_parents,top_children", type(next_parents[0]),
+        #            len(next_parents), type(top_children[0]), len(top_children))
 
         for worker_queue in input_queues:
             worker_queue.put(next_parents)
