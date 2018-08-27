@@ -205,12 +205,13 @@ if __name__ == "__main__":
             new_parents.append(children[i][0])#[i] = copy.deepcopy(children[i][0])
 
         elite = new_parents[0]
+        next_parents = copy.deepcopy(new_parents)
 
         for worker_queue in input_queues:
             if False:
                 worker_queue.put(1)
             else:
-                worker_queue.put(new_parents)
+                worker_queue.put(next_parents)
         logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, len of new_parents:{3}, type of new_parents:{4}".
                      format(mp.current_process(), new_parents[0]['fc.2.bias'], new_parents[1]['fc.2.bias'], len(new_parents), type(new_parents)))
 
