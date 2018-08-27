@@ -13,16 +13,17 @@ import logging
 import torch
 import torch.nn as nn
 import torch.multiprocessing as mp
+import torch.nn.functional as F
 
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 600
-PARENTS_COUNT = 10
-WORKERS_COUNT = 6
-# POPULATION_SIZE = 4
-# PARENTS_COUNT = 2
-# WORKERS_COUNT = 2
+# POPULATION_SIZE = 600
+# PARENTS_COUNT = 10
+# WORKERS_COUNT = 6
+POPULATION_SIZE = 4
+PARENTS_COUNT = 2
+WORKERS_COUNT = 2
 
 
 NOISE_STD = 0.01
@@ -35,6 +36,7 @@ fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
+
 
 class Net(nn.Module):
     def __init__(self, input_shape, n_actions):
@@ -107,7 +109,7 @@ def build_net(env, seeds, device="cpu"):
 
 
 def rand_pick(seq, probabilities):
-    x = np.random.uniform(0 ,1)
+    x = np.random.uniform(0, 1)
     cum_prob = 0.0
     for item, item_pro in zip(seq, probabilities):
         cum_prob += item_pro
@@ -118,13 +120,15 @@ def rand_pick(seq, probabilities):
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
-    parent_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    pro_list = [0.3, 0.2, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
-    #parent_list = [0, 1]
-    #pro_list = [0.6, 0.4]
+    # parent_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    # pro_list = [0.3, 0.2, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+    parent_list = [0, 1]
 
     while True:
-        parents_w = input_queue.get()
+        get_item = input_queue.get()
+        parents_w = copy.deepcopy(get_item[0])
+        pro_list = get_item[1]
+
         batch_steps_w = 0
         child = []
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".
@@ -165,20 +169,24 @@ if __name__ == "__main__":
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
     workers = []
+    probability = []
     time_start = time.time()
+    for _ in range(PARENTS_COUNT):
+        probability.append(1 / PARENTS_COUNT)
 
     for _ in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
         w = mp.Process(target=worker_func, args=(input_queue, output_queue, device))
         w.start()
-        input_queue.put(parents)
+        input_queue.put((parents, probability))
 
     logger.debug("Before++++, current_process: {0},parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
                  "len of parents:{3}, type of parents:{4}".format(mp.current_process(), parents[0]['fc.2.bias'],
                                                                   parents[1]['fc.2.bias'], len(parents), type(parents)))
     gen_idx = 0
     elite = None
+
     while True:
         t_start = time.time()
         batch_steps = 0
@@ -206,6 +214,15 @@ if __name__ == "__main__":
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
+        value_d = []
+        for i in range(PARENTS_COUNT):
+            value_d.append(top_children[i][1]+21)
+        logger.debug("value_d:{0}".format(value_d))
+        probability = F.softmax(torch.tensor(value_d))
+        logger.debug("probability:{0}".format(probability))
+
+        if reward_max > 18:
+            break
         # next_parents = []
         # for i in range(PARENTS_COUNT):
         #     next_parents[i] = copy.deepcopy(top_children[:PARENTS_COUNT])
@@ -223,7 +240,7 @@ if __name__ == "__main__":
         #            len(next_parents), type(top_children[0]), len(top_children))
 
         for worker_queue in input_queues:
-            worker_queue.put(next_parents)
+            worker_queue.put((next_parents, probability))
         logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
                      "len of new_parents:{3}, type of new_parents:{4}".
                      format(mp.current_process(), next_parents[0]['fc.2.bias'], next_parents[1]['fc.2.bias'],
