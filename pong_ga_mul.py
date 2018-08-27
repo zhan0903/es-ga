@@ -18,12 +18,12 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
 
-# POPULATION_SIZE = 600
-# PARENTS_COUNT = 10
-# WORKERS_COUNT = 6
-POPULATION_SIZE = 4
-PARENTS_COUNT = 2
-WORKERS_COUNT = 2
+POPULATION_SIZE = 1000
+PARENTS_COUNT = 20
+WORKERS_COUNT = 10
+# POPULATION_SIZE = 4
+# PARENTS_COUNT = 2
+# WORKERS_COUNT = 2
 
 
 NOISE_STD = 0.01
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         for i in range(PARENTS_COUNT):
             value_d.append(top_children[i][1]+21)
         logger.debug("value_d:{0}".format(value_d))
-        probability = F.softmax(torch.tensor(value_d))
+        probability = F.softmax(torch.tensor(value_d), dim=0)
         logger.debug("probability:{0}".format(probability))
 
         if reward_max > 18:
