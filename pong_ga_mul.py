@@ -110,6 +110,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
     while True:
         parents_w = input_queue.get()
+        batch_steps_w = 0
         child = []
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2}".
                      format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w)))
@@ -118,13 +119,14 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             child_seed = np.random.randint(MAX_SEED)
             child_net = mutate_net(new_env, parents_w[parent], child_seed).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
+            batch_steps_w += steps
             child.append((child_net.state_dict(), reward, steps))
         child.sort(key=lambda p: p[1], reverse=True)
         #logger.debug("middle, current_process: {0},child[0][1]:{1},child[0][2]:{2},len of "
         #             "child:{3}".format(mp.current_process(), child[0][1], child[0][2], len(child)))
         for i in range(PARENTS_COUNT):
             #output_queue.put(child[i])
-            output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=child[i][2]))
+            output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=batch_steps_w))
 
 
 if __name__ == "__main__":
@@ -180,7 +182,7 @@ if __name__ == "__main__":
         writer.add_scalar("reward_max", reward_max, gen_idx)
         writer.add_scalar("batch_steps", batch_steps, gen_idx)
         writer.add_scalar("gen_seconds", time.time() - t_start, gen_idx)
-        speed = batch_steps / (time.time() - t_start)
+        speed = batch_steps / ((time.time() - t_start)*PARENTS_COUNT)
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
