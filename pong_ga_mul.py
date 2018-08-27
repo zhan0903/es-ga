@@ -18,12 +18,12 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000
-PARENTS_COUNT = 20
-WORKERS_COUNT = 10
-# POPULATION_SIZE = 4
-# PARENTS_COUNT = 2
-# WORKERS_COUNT = 2
+# POPULATION_SIZE = 1000
+# PARENTS_COUNT = 20
+# WORKERS_COUNT = 10
+POPULATION_SIZE = 8
+PARENTS_COUNT = 4
+WORKERS_COUNT = 2
 
 
 NOISE_STD = 0.01
@@ -31,7 +31,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -226,10 +226,6 @@ if __name__ == "__main__":
 
         if reward_max > 18:
             break
-        # next_parents = []
-        # for i in range(PARENTS_COUNT):
-        #     next_parents[i] = copy.deepcopy(top_children[:PARENTS_COUNT])
-        #     new_parents.append(children[i][0])#[i] = copy.deepcopy(children[i][0])
 
         next_parents = []
         elite = top_children[0]
@@ -237,11 +233,6 @@ if __name__ == "__main__":
         for i in range(PARENTS_COUNT):
             #deep copy solve the invalid device bug
             next_parents.append(copy.deepcopy(top_children[i][0]))
-
-        #next_parents = copy.deepcopy(top_children[:PARENTS_COUNT][0])
-
-        #logger.debug("type of next_parents[0],children[0], len of next_parents,top_children", type(next_parents[0]),
-        #            len(next_parents), type(top_children[0]), len(top_children))
 
         for worker_queue in input_queues:
             worker_queue.put((next_parents, probability))
