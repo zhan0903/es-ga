@@ -18,9 +18,9 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000#600
+POPULATION_SIZE = 600
 PARENTS_COUNT = 20
-WORKERS_COUNT = 10#6
+WORKERS_COUNT = 6
 # POPULATION_SIZE = 8
 # PARENTS_COUNT = 4
 # WORKERS_COUNT = 2
@@ -105,7 +105,7 @@ OutputItem = collections.namedtuple('OutputItem', field_names=['child_net', 'rew
 def build_net(env, seeds, device="cpu"):
     torch.manual_seed(seeds)
     model = Net(env.observation_space.shape, env.action_space.n)
-    net_new = torch.nn.DataParallel(model, device_ids=[0, 1])
+    net_new = torch.nn.DataParallel(model, device_ids=[0, 1]).cuda()
     #net_new = Net(env.observation_space.shape, env.action_space.n)
     return net_new
 
