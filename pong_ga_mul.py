@@ -31,7 +31,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -129,7 +129,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
                      format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
-            pro_list /= sum(pro_list)
+            pro_list = np.array(pro_list)
+            pro_list = pro_list/sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             #parent = rand_pick(parent_list, pro_list)
             #parent = np.random.randint(PARENTS_COUNT)
