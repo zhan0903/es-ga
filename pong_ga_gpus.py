@@ -18,9 +18,9 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 600
+POPULATION_SIZE = 1000#600
 PARENTS_COUNT = 20
-WORKERS_COUNT = 6
+WORKERS_COUNT = 10#6
 # POPULATION_SIZE = 8
 # PARENTS_COUNT = 4
 # WORKERS_COUNT = 2
@@ -199,7 +199,8 @@ if __name__ == "__main__":
         if elite is not None:
             top_children.append(elite)
 
-        rewards = [p[1] for p in top_children]
+        top_children.sort(key=lambda p: p[1], reverse=True)
+        rewards = [p[1] for p in top_children[:PARENTS_COUNT]]
         reward_mean = np.mean(rewards)
         reward_max = np.max(rewards)
         reward_std = np.std(rewards)
