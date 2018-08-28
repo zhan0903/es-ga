@@ -31,7 +31,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -104,18 +104,10 @@ OutputItem = collections.namedtuple('OutputItem', field_names=['child_net', 'rew
 
 def build_net(env, seeds, device="cpu"):
     torch.manual_seed(seeds)
-    net = Net(env.observation_space.shape, env.action_space.n)
-    return net
-
-
-def rand_pick(seq, probabilities):
-    x = np.random.uniform(0, 1)
-    cum_prob = 0.0
-    for item, item_pro in zip(seq, probabilities):
-        cum_prob += item_pro
-        if x < cum_prob:
-            break
-    return item
+    #model = Net(env.observation_space.shape, env.action_space.n)
+    #net_new = torch.nn.DataParallel(model)#device_ids=[0, 1, 2])
+    net_new = Net(env.observation_space.shape, env.action_space.n)
+    return net_new
 
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
@@ -136,7 +128,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}".
                      format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
         for _ in range(SEEDS_PER_WORKER):
-            #random = np.random.uniform()
+            #solve pro do not sum to 1
+            pro_list /= pro_list.sum()
             parent = np.random.choice(parent_list, p=pro_list)
             #parent = rand_pick(parent_list, pro_list)
             #parent = np.random.randint(PARENTS_COUNT)
