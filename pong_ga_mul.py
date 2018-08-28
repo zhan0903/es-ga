@@ -129,7 +129,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
                      format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
-            pro_list /= pro_list.sum()
+            pro_list /= sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             #parent = rand_pick(parent_list, pro_list)
             #parent = np.random.randint(PARENTS_COUNT)
