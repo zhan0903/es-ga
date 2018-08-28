@@ -219,9 +219,6 @@ if __name__ == "__main__":
         probability = F.softmax(torch.tensor(value_d), dim=0)
         logger.debug("probability:{0}".format(probability))
 
-        if reward_max > 18:
-            break
-
         next_parents = []
         elite = copy.deepcopy(top_children[0])
 
