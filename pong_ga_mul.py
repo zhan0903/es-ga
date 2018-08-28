@@ -223,7 +223,7 @@ if __name__ == "__main__":
             break
 
         next_parents = []
-        elite = top_children[0]
+        elite = copy.deepcopy(top_children[0])
 
         for i in range(PARENTS_COUNT):
             #deep copy solve the invalid device bug

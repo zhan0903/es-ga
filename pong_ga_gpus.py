@@ -180,10 +180,6 @@ if __name__ == "__main__":
         w.start()
         input_queue.put((parents, probability))
 
-    #logger.debug("Before++++, current_process: {0},parents[0]:{1}".format(mp.current_process(), parents[0].parameters()))
-    #logger.debug("Before++++, current_process: {0},parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
-    #            "len of parents:{3}, type of parents:{4}".format(mp.current_process(), parents[0]['fc.2.bias'],
-    #                                                              parents[1]['fc.2.bias'], len(parents), type(parents)))
     gen_idx = 0
     elite = None
 
@@ -226,7 +222,7 @@ if __name__ == "__main__":
             break
 
         next_parents = []
-        elite = top_children[0]
+        elite = copy.deepcopy(top_children[0])
 
         for i in range(PARENTS_COUNT):
             #deep copy solve the invalid device bug
