@@ -125,8 +125,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
         batch_steps_w = 0
         child = []
-        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}".
-                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
+        #logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}".
+        #             format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
             pro_list = np.array(pro_list)
@@ -161,7 +161,9 @@ if __name__ == "__main__":
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
         net = build_net(env, seed).to(device)
-        parents.append((net.state_dict()))
+        parents.append(net.module.state_dict())
+
+    logger.debug("Before++++, current_process: {0},parents[0]:{1}".format(mp.current_process(), parents[0]['fc.2.bias']))
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
@@ -178,9 +180,10 @@ if __name__ == "__main__":
         w.start()
         input_queue.put((parents, probability))
 
-    logger.debug("Before++++, current_process: {0},parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
-                 "len of parents:{3}, type of parents:{4}".format(mp.current_process(), parents[0]['fc.2.bias'],
-                                                                  parents[1]['fc.2.bias'], len(parents), type(parents)))
+    #logger.debug("Before++++, current_process: {0},parents[0]:{1}".format(mp.current_process(), parents[0].parameters()))
+    #logger.debug("Before++++, current_process: {0},parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
+    #            "len of parents:{3}, type of parents:{4}".format(mp.current_process(), parents[0]['fc.2.bias'],
+    #                                                              parents[1]['fc.2.bias'], len(parents), type(parents)))
     gen_idx = 0
     elite = None
 
