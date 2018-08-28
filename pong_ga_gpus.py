@@ -18,9 +18,9 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000
+POPULATION_SIZE = 800
 PARENTS_COUNT = 20
-WORKERS_COUNT = 10
+WORKERS_COUNT = 8
 # POPULATION_SIZE = 8
 # PARENTS_COUNT = 4
 # WORKERS_COUNT = 2
