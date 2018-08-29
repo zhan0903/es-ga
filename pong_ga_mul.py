@@ -149,7 +149,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
-    writer = SummaryWriter(comment="-pong-ga")
+    writer = SummaryWriter(comment="-pong-ga-mul")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
