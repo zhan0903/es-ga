@@ -156,8 +156,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             batch_steps_w += steps
             child.append((child_net.state_dict(), reward, steps))
         child.sort(key=lambda p: p[1], reverse=True)
-        #logger.debug("middle, current_process: {0},child[0][1]:{1},child[0][2]:{2},len of "
-        #             "child:{3}".format(mp.current_process(), child[0][1], child[0][2], len(child)))
+        logger.debug("middle, current_process: {0},child[0][1]:{1}, len of "
+                     "child:{2}".format(mp.current_process(), child[0][0]['fc.2.bias'], len(child)))
         for i in range(PARENTS_COUNT):
             output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=batch_steps_w))
 
