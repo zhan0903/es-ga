@@ -18,9 +18,9 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 600
+POPULATION_SIZE = 1000#600
 PARENTS_COUNT = 20
-WORKERS_COUNT = 6
+WORKERS_COUNT = 10#6
 # POPULATION_SIZE = 8
 # PARENTS_COUNT = 4
 # WORKERS_COUNT = 2
@@ -210,6 +210,9 @@ if __name__ == "__main__":
         total_time = (time.time() - time_start) / 60
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
+
+        if reward_mean == 21:
+            exit(0)
 
         value_d = []
         for i in range(PARENTS_COUNT):
