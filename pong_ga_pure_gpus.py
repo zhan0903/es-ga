@@ -20,7 +20,7 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 2000#600
+POPULATION_SIZE = 1000#600
 PARENTS_COUNT = 20
 WORKERS_COUNT = 20#6
 # POPULATION_SIZE = 8
