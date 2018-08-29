@@ -2,6 +2,7 @@
 import sys
 import gym
 import ptan
+import gym.spaces
 #import roboschool
 import collections
 import copy
@@ -21,14 +22,12 @@ from tensorboardX import SummaryWriter
 
 POPULATION_SIZE = 2000#600
 PARENTS_COUNT = 20
-WORKERS_COUNT = 10#6
+WORKERS_COUNT = 20#6
 # POPULATION_SIZE = 8
 # PARENTS_COUNT = 4
 # WORKERS_COUNT = 2
 
-BATCH_SIZE = 128
-
-NOISE_STD = 0.01
+#NOISE_STD = 0.06
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
@@ -90,14 +89,13 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(env, net, seed, copy_net=True):
+def mutate_net(env, net, seed, noise_std, copy_net=True):
     new_net = Net(env.observation_space.shape, env.action_space.n)
     new_net.load_state_dict(net)
-    #new_net = copy.deepcopy(net) if copy_net else net
     np.random.seed(seed)
     for p in new_net.parameters():
         noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32))#.cuda()
-        p.data += NOISE_STD * noise_t
+        p.data += noise_std * noise_t
     return new_net
 
 
@@ -140,18 +138,19 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         get_item = input_queue.get()
         parents_w = get_item[0]
         pro_list = get_item[1]
+        noise_step_w = get_item[2]
 
         batch_steps_w = 0
         child = []
-        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}".
-                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
+        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
+                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list, noise_step_w))
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
             pro_list = np.array(pro_list)
             pro_list = pro_list/sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(new_env, parents_w[parent], child_seed).to(device_w)
+            child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step_w).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
             batch_steps_w += steps
             child.append((child_net.state_dict(), reward, steps))
@@ -160,6 +159,16 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
                      "child:{2}".format(mp.current_process(), child[0][0]['fc.2.bias'], len(child)))
         for i in range(PARENTS_COUNT):
             output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=batch_steps_w))
+
+# def cac_noise_std(gen_idx, reward_max):
+#     if reward_max == before_reward_max:
+#         count = count+1
+#     if count == 3:
+#         noise_step = noise_step/2
+#         count = 0
+#     before_reward_max = reward_max
+#     return noise_step
+#
 
 
 if __name__ == "__main__":
@@ -173,6 +182,7 @@ if __name__ == "__main__":
     device1 = "cuda:1" if args.cuda else "cpu"#torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     env = make_env()
+    noise_step = 0.06
     #create PARENTS_COUNT parents
     parents = []
     for i in range(PARENTS_COUNT):
@@ -183,6 +193,7 @@ if __name__ == "__main__":
     logger.debug("Before++++, current_process: {0},parents[0]:{1}".format(mp.current_process(), parents[0]['fc.2.bias']))
 
     input_queues = []
+    count = 0
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
     workers = []
     probability = []
@@ -198,10 +209,12 @@ if __name__ == "__main__":
         else:
             w = mp.Process(target=worker_func, args=(input_queue, output_queue, device0))
         w.start()
-        input_queue.put((parents, probability))
+        input_queue.put((parents, probability, noise_step))
 
     gen_idx = 0
     elite = None
+    reward_max_temp = 0
+    count = 0
 
     while True:
         t_start = time.time()
@@ -248,10 +261,17 @@ if __name__ == "__main__":
             #deep copy solve the invalid device bug
             next_parents.append(copy.deepcopy(top_children[i][0]))
 
+        if reward_max == reward_max_temp:
+            count = count+1
+        if count >= 3:
+            noise_step = noise_step/2
+
         for worker_queue in input_queues:
-            worker_queue.put((next_parents, probability))
+            worker_queue.put((next_parents, probability, noise_step))
         logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
                      "len of new_parents:{3}, type of new_parents:{4}".
                      format(mp.current_process(), next_parents[0]['fc.2.bias'], next_parents[1]['fc.2.bias'],
                             len(next_parents), type(next_parents)))
         gen_idx += 1
+        reward_max_temp = reward_max
+
