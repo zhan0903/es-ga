@@ -204,7 +204,7 @@ if __name__ == "__main__":
     for j in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
-        if j >= (WORKERS_COUNT/2):
+        if j >= (WORKERS_COUNT/2-1):
             w = mp.Process(target=worker_func, args=(input_queue, output_queue, device1))
         else:
             w = mp.Process(target=worker_func, args=(input_queue, output_queue, device0))
