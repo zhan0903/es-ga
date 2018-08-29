@@ -116,16 +116,16 @@ def build_net(env, seeds, device="cpu"):
     return net_new
 
 
-class Dataset(Dataset):
-    def __init__(self, size, length):
-        self.len = length
-        self.data = torch.randn(length, size)
-
-    def __getitem__(self, index):
-        return self.data[index]
-
-    def __len__(self):
-        return self.len
+# class Dataset(Dataset):
+#     def __init__(self, size, length):
+#         self.len = length
+#         self.data = torch.randn(length, size)
+#
+#     def __getitem__(self, index):
+#         return self.data[index]
+#
+#     def __len__(self):
+#         return self.len
 
 
 def worker_func(input_queue, output_queue, device_w="cpu"):
@@ -143,8 +143,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
         batch_steps_w = 0
         child = []
-        #logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}".
-        #             format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
+        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}".
+                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list))
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
             pro_list = np.array(pro_list)
