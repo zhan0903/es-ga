@@ -238,7 +238,7 @@ if __name__ == "__main__":
         writer.add_scalar("reward_max", reward_max, gen_idx)
         writer.add_scalar("batch_steps", batch_steps, gen_idx)
         writer.add_scalar("gen_seconds", time.time() - t_start, gen_idx)
-        writer.add_scalar("noise_step", noise_step)
+        writer.add_scalar("noise_step", noise_step, gen_idx)
 
         speed = batch_steps / ((time.time() - t_start)*PARENTS_COUNT)
         writer.add_scalar("speed", speed, gen_idx)
