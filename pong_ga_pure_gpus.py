@@ -238,11 +238,13 @@ if __name__ == "__main__":
         writer.add_scalar("reward_max", reward_max, gen_idx)
         writer.add_scalar("batch_steps", batch_steps, gen_idx)
         writer.add_scalar("gen_seconds", time.time() - t_start, gen_idx)
+        writer.add_scalar("noise_step", noise_step)
+
         speed = batch_steps / ((time.time() - t_start)*PARENTS_COUNT)
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
-            gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
+        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, noise_step=%f, total_running_time=%.2f/m" % (
+            gen_idx, reward_mean, reward_max, reward_std, speed, noise_step, total_time))
 
         if reward_mean == 21:
             exit(0)
