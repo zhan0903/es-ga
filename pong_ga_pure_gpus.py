@@ -27,7 +27,7 @@ WORKERS_COUNT = 20#6
 # PARENTS_COUNT = 4
 # WORKERS_COUNT = 2
 
-#NOISE_STD = 0.06
+#NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
@@ -265,6 +265,7 @@ if __name__ == "__main__":
             count = count+1
         if count >= 3:
             noise_step = noise_step/2
+            count = 0
 
         for worker_queue in input_queues:
             worker_queue.put((next_parents, probability, noise_step))
