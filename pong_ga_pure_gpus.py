@@ -220,6 +220,7 @@ if __name__ == "__main__":
     elite = None
     reward_max_temp = 0
     count = 0
+    scale = 0.1
 
     while True:
         t_start = time.time()
@@ -268,7 +269,18 @@ if __name__ == "__main__":
             #deep copy solve the invalid device bug
             next_parents.append(copy.deepcopy(top_children[i][0]))
 
-        noise_step = np.random.normal(scale=0.1)
+        if reward_max == reward_max_temp:
+            if count >= 2:
+                # m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
+                scale = 0.3
+                # noise_step = 0.01
+            if count >= 4:
+                scale = 0.5
+            count = count+1
+        else:
+            count = 0
+
+        noise_step = np.random.normal(scale=scale)
         # if reward_max == reward_max_temp:
         #     if count >= 3:
         #         # m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
