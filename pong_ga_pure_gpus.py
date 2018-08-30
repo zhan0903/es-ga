@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000#600
-PARENTS_COUNT = 20
-WORKERS_COUNT = 20#6
-# POPULATION_SIZE = 8
-# PARENTS_COUNT = 4
-# WORKERS_COUNT = 2
+# POPULATION_SIZE = 1000#600
+# PARENTS_COUNT = 20
+# WORKERS_COUNT = 20#6
+POPULATION_SIZE = 8
+PARENTS_COUNT = 4
+WORKERS_COUNT = 2
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -179,7 +179,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     #device = "cuda" if args.cuda else "cpu"
     device0 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device1 = "cuda:1" if args.cuda else "cpu"#torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device1 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
+    logger.debug("gpu number:{0}".format(torch.cuda.device_count()))
+
+    if torch.cuda.device_count() > 1:
+        device1 = "cuda:1" if args.cuda else "cpu"
 
     env = make_env()
     noise_step = 0.06
@@ -267,6 +272,9 @@ if __name__ == "__main__":
             count = count+1
         if count >= 3:
             noise_step = noise_step/2
+        if count >= 5:
+            m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
+            noise_step = m.sample()
             count = 0
 
         for worker_queue in input_queues:
