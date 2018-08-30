@@ -268,14 +268,15 @@ if __name__ == "__main__":
             #deep copy solve the invalid device bug
             next_parents.append(copy.deepcopy(top_children[i][0]))
 
-        if reward_max == reward_max_temp:
-            if count >= 3:
-                # m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
-                noise_step = np.random.normal(scale=0.1)
-                # noise_step = 0.01
-            count = count+1
-        else:
-            count = 0
+        noise_step = np.random.normal(scale=0.1)
+        # if reward_max == reward_max_temp:
+        #     if count >= 3:
+        #         # m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
+        #         noise_step = np.random.normal(scale=0.1)
+        #         # noise_step = 0.01
+        #     count = count+1
+        # else:
+        #     count = 0
 
         for worker_queue in input_queues:
             worker_queue.put((next_parents, probability, noise_step))
