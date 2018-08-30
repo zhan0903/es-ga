@@ -187,7 +187,7 @@ if __name__ == "__main__":
         device1 = "cuda:1" if args.cuda else "cpu"
 
     env = make_env()
-    noise_step = 0.06
+    noise_step = 0.04
     #create PARENTS_COUNT parents
     parents = []
     for i in range(PARENTS_COUNT):
