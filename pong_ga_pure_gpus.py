@@ -20,9 +20,9 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000#600
+POPULATION_SIZE = 600#1000
 PARENTS_COUNT = 20
-WORKERS_COUNT = 20#6
+WORKERS_COUNT = 10#20
 # POPULATION_SIZE = 8
 # PARENTS_COUNT = 4
 # WORKERS_COUNT = 2
@@ -274,7 +274,8 @@ if __name__ == "__main__":
             noise_step = noise_step/2
         if count >= 5:
             #m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
-            noise_step = np.random.normal(scale=0.1)
+            #noise_step = np.random.normal(scale=0.1)
+            noise_step = 0.01
             count = 0
 
         for worker_queue in input_queues:
