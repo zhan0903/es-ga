@@ -272,15 +272,13 @@ if __name__ == "__main__":
             next_parents.append(copy.deepcopy(top_children[i][0]))
 
         if reward_max == reward_max_temp:
-            if count >= 2:
-                # m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
-                scale = 0.3
-                # noise_step = 0.01
-            if count >= 4:
+            count = count + 1
+            if count == 1:
                 scale = 0.5
-            if count >= 5:
+            elif count == 2:
                 scale = 0.8
-            count = count+1
+            else:
+                scale = 1
         else:
             count = 0
             scale = 0.1
