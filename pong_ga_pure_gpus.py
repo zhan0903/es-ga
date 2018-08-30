@@ -187,7 +187,9 @@ if __name__ == "__main__":
         device1 = "cuda:1" if args.cuda else "cpu"
 
     env = make_env()
-    noise_step = 0.04
+    #noise_step = 0.04
+    noise_step = np.random.normal(scale=0.5)
+
     #create PARENTS_COUNT parents
     parents = []
     for i in range(PARENTS_COUNT):
@@ -276,9 +278,13 @@ if __name__ == "__main__":
                 # noise_step = 0.01
             if count >= 4:
                 scale = 0.5
+            if count >= 5:
+                scale = 0.8
             count = count+1
         else:
             count = 0
+            scale = 0.1
+            reward_max_temp = reward_max
 
         noise_step = np.random.normal(scale=scale)
         # if reward_max == reward_max_temp:
@@ -297,5 +303,5 @@ if __name__ == "__main__":
                      format(mp.current_process(), next_parents[0]['fc.2.bias'], next_parents[1]['fc.2.bias'],
                             len(next_parents), type(next_parents)))
         gen_idx += 1
-        reward_max_temp = reward_max
+        #reward_max_temp = reward_max
 
