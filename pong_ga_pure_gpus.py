@@ -273,12 +273,12 @@ if __name__ == "__main__":
 
         if reward_max == reward_max_temp:
             count = count + 1
-            if count == 1:
+            if count == 2:
+                scale = 0.3
+            elif count == 4:
                 scale = 0.5
-            elif count == 2:
-                scale = 0.8
             else:
-                scale = 1
+                scale = 0.8
         else:
             count = 0
             scale = 0.1
