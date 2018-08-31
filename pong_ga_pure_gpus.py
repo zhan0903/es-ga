@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-# POPULATION_SIZE = 1000#600#1000
-# PARENTS_COUNT = 20
-# WORKERS_COUNT = 20#10#20
-POPULATION_SIZE = 8
-PARENTS_COUNT = 4
-WORKERS_COUNT = 2
+POPULATION_SIZE = 1000#600#1000
+PARENTS_COUNT = 20
+WORKERS_COUNT = 20#10#20
+# POPULATION_SIZE = 8
+# PARENTS_COUNT = 4
+# WORKERS_COUNT = 2
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -153,17 +153,17 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         if reward_max_w and (reward_max_w == reward_max_temp):
             count = count + 1
             if count == 2:
-                scale_step = 0.5
-            elif count == 4:
                 scale_step = 0.3
+            elif count == 4:
+                scale_step = 0.5
             else:
-                scale_step = 0.2
+                scale_step = 0.8
         else:
             count = 0
-            scale_step = 0.8
+            scale_step = 0.2
             reward_max_temp = reward_max_w
 
-        #noise_step = np.random.normal(scale=scale_step)
+        noise_step = np.random.normal(scale=scale_step)
 
         #logger.debug(
         #    "in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
@@ -175,7 +175,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             pro_list = pro_list/sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             child_seed = np.random.randint(MAX_SEED)
-            noise_step = np.random.normal(scale=scale_step)
+            #noise_step = np.random.normal(scale=scale_step)
             child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
             batch_steps_w += steps
