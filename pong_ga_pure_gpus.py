@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-# POPULATION_SIZE = 1000#600#1000
-# PARENTS_COUNT = 20
-# WORKERS_COUNT = 20#10#20
-POPULATION_SIZE = 40
-PARENTS_COUNT = 4
-WORKERS_COUNT = 4
+POPULATION_SIZE = 1000#600#1000
+PARENTS_COUNT = 20
+WORKERS_COUNT = 20#10#20
+# POPULATION_SIZE = 40
+# PARENTS_COUNT = 4
+# WORKERS_COUNT = 4
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -131,7 +131,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     parent_list = []
     reward_max_temp = None
     count = 0
-    scale_step = 0.2
+    scale_step = 0.8
 
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
@@ -153,14 +153,14 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         if reward_max_w and (reward_max_w == reward_max_temp):
             count = count + 1
             if count == 2:
-                scale_step = 0.3
+                scale_step = 0.6
             elif count == 4:
-                scale_step = 0.5
+                scale_step = 0.3
             else:
-                scale_step = 0.8
+                scale_step = 0.2
         else:
             count = 0
-            scale_step = 0.2
+            scale_step = 0.8
             reward_max_temp = reward_max_w
 
         noise_step = np.random.normal(scale=scale_step)
