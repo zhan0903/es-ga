@@ -131,7 +131,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     parent_list = []
     reward_max_temp = None
     count = 0
-    scale_step = 0.8
+    scale_step = 0.2
 
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
