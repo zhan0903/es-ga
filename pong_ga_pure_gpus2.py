@@ -304,8 +304,12 @@ if __name__ == "__main__":
         logger.debug("top_chidern[9]['fc.2.bias']:{0},elite:{1}".format(top_children[9][0]['fc.2.bias'], elite[0]['fc.2.bias']))
 
         for i in range(PARENTS_COUNT):
-            #deep copy solve the invalid device bug
-            next_parents.append(copy.deepcopy(top_children[i][0]))
+            # copy tensor from gpu to cpu
+            next_parent = Net(env.observation_space.shape, env.action_space.n)
+            next_parent.load_state_dict(top_children[i][0])
+            next_parents.append(next_parent.state_dict())
+            # deep copy solve the invalid device bug
+            # next_parents.append(copy.deepcopy(top_children[i][0]))
 
         for worker_queue in input_queues:
             worker_queue.put((next_parents, probability, reward_max))
