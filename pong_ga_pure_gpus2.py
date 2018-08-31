@@ -302,11 +302,11 @@ if __name__ == "__main__":
 
         next_parents = []
         elite = copy.deepcopy(top_children[0])
-        logger.debug("top_chidern[9]['fc.2.bias']:{0}".format(top_children[9][0]['fc.2.bias']))
+        logger.debug("top_chidern[9]['fc.2.bias']:{0},elite:{1}".format(top_children[9][0]['fc.2.bias'], elite[0]['fc.2.bias']))
 
         for i in range(PARENTS_COUNT):
             #deep copy solve the invalid device bug
-            next_parents.append(copy.deepcopy(top_children[i][0]))
+            next_parents.append(copy.deepcopy(top_children[i][0].cpu()))
 
         # if reward_max == reward_max_temp:
         #     count = count + 1
