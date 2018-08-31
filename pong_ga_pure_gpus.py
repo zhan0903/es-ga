@@ -139,8 +139,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
     #parent_list = [0, 1]
-    logger.debug("in work_func,current_process: {0},parent_list:{1},device_w_id:{2}".format(mp.current_process(),
-                                                                                            parent_list, device_w_id))
+    logger.debug("in work_func,current_process: {0},parent_list:{1}".format(mp.current_process(), parent_list))
 
     while True:
         get_item = input_queue.get()
