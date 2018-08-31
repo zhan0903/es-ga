@@ -163,7 +163,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             scale_step = 0.8
             reward_max_temp = reward_max_w
 
-        noise_step = np.random.normal(scale=scale_step)
+        #noise_step = np.random.normal(scale=scale_step)
 
         logger.debug(
             "in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
@@ -175,6 +175,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             pro_list = pro_list/sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             child_seed = np.random.randint(MAX_SEED)
+            noise_step = np.random.normal(scale=scale_step)
             child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
             batch_steps_w += steps
