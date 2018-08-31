@@ -147,8 +147,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
         batch_steps_w = 0
         child = []
-        logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
-                     format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list, noise_step_w))
+        # logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
+        #              format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list, noise_step_w))
 
         if reward_max_w and (reward_max_w == reward_max_temp):
             count = count + 1
@@ -164,6 +164,10 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             reward_max_temp = reward_max_w
 
         noise_step = np.random.normal(scale=scale_step)
+
+        logger.debug(
+            "in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
+            format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list, noise_step))
 
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
@@ -267,13 +271,13 @@ if __name__ == "__main__":
         writer.add_scalar("reward_max", reward_max, gen_idx)
         writer.add_scalar("batch_steps", batch_steps, gen_idx)
         writer.add_scalar("gen_seconds", time.time() - t_start, gen_idx)
-        writer.add_scalar("noise_step", noise_step, gen_idx)
+        #writer.add_scalar("noise_step", noise_step, gen_idx)
 
         speed = batch_steps / ((time.time() - t_start)*PARENTS_COUNT)
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, noise_step=%f, total_running_time=%.2f/m" % (
-            gen_idx, reward_mean, reward_max, reward_std, speed, noise_step, total_time))
+        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
+            gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
         if reward_mean == 21:
             exit(0)
