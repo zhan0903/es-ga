@@ -301,8 +301,8 @@ if __name__ == "__main__":
         logger.debug("probability:{0}".format(probability))
 
         next_parents = []
-        elite = copy.deepcopy(top_children[0])
-        logger.debug("top_chidern[0]['fc.2.bias']:{0}".format(top_children[0]['fc.2.bias']))
+        elite = copy.deepcopy(top_children[0][0])
+        logger.debug("top_chidern[0]['fc.2.bias']:{0}".format(top_children[0][0]['fc.2.bias']))
 
         for i in range(PARENTS_COUNT):
             #deep copy solve the invalid device bug
