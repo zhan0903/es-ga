@@ -186,7 +186,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             batch_steps_w += steps
             child.append((child_net.state_dict(), reward, steps))
         child.sort(key=lambda p: p[1], reverse=True)
-        logger.debug("middle, current_process: {0},child[0][1]:{1}, len of child:{2}".
+        logger.debug("current_process: {0},child[0][1]:{1}, len of child:{2}".
                      format(mp.current_process(), child[0][0]['fc.2.bias'], len(child)))
         for i in range(PARENTS_COUNT):
             output_queue.put(OutputItem(child_net=child[i][0], reward=child[i][1], steps=batch_steps_w))
@@ -219,11 +219,7 @@ if __name__ == "__main__":
     else:
         devices.append("cpu")
 
-    # if torch.cuda.device_count() > 1:
-    #     device1 = "cuda:1" if args.cuda else "cpu"
     env = make_env()
-    #noise_step = 0.04
-    #noise_step = np.random.normal(scale=0.5)
 
     #create PARENTS_COUNT parents
     parents = []
@@ -306,30 +302,7 @@ if __name__ == "__main__":
 
         for i in range(PARENTS_COUNT):
             #deep copy solve the invalid device bug
-            next_parents.append(copy.deepcopy(top_children[i][0].cpu()))
-
-        # if reward_max == reward_max_temp:
-        #     count = count + 1
-        #     if count == 2:
-        #         scale = 0.3
-        #     elif count == 4:
-        #         scale = 0.5
-        #     else:
-        #         scale = 0.8
-        # else:
-        #     count = 0
-        #     scale = 0.1
-        #     reward_max_temp = reward_max
-        #
-        # noise_step = np.random.normal(scale=scale)
-        # if reward_max == reward_max_temp:
-        #     if count >= 3:
-        #         # m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
-        #         noise_step = np.random.normal(scale=0.1)
-        #         # noise_step = 0.01
-        #     count = count+1
-        # else:
-        #     count = 0
+            next_parents.append(copy.deepcopy(top_children[i][0]))
 
         for worker_queue in input_queues:
             worker_queue.put((next_parents, probability, reward_max))
