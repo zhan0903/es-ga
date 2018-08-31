@@ -298,7 +298,7 @@ if __name__ == "__main__":
 
         next_parents = []
         elite = Net(env.observation_space.shape, env.action_space.n)
-        elite.load_state_dict(top_children[0])
+        elite.load_state_dict(top_children[0][0])
         elite = elite.state_dict()
         #elite = copy.deepcopy(top_children[0])
         logger.debug("top_chidern[9]['fc.2.bias']:{0},elite:{1}".format(top_children[9][0]['fc.2.bias'], elite[0]['fc.2.bias']))
