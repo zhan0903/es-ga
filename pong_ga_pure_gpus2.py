@@ -297,7 +297,10 @@ if __name__ == "__main__":
         logger.debug("probability:{0}".format(probability))
 
         next_parents = []
-        elite = copy.deepcopy(top_children[0])
+        elite = Net(env.observation_space.shape, env.action_space.n)
+        elite.load_state_dict(top_children[0])
+        elite = elite.state_dict()
+        #elite = copy.deepcopy(top_children[0])
         logger.debug("top_chidern[9]['fc.2.bias']:{0},elite:{1}".format(top_children[9][0]['fc.2.bias'], elite[0]['fc.2.bias']))
 
         for i in range(PARENTS_COUNT):
