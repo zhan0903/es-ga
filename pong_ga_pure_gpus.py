@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000#600#1000
-PARENTS_COUNT = 20
-WORKERS_COUNT = 20#10#20
-# POPULATION_SIZE = 8
-# PARENTS_COUNT = 4
-# WORKERS_COUNT = 2
+# POPULATION_SIZE = 1000#600#1000
+# PARENTS_COUNT = 20
+# WORKERS_COUNT = 20#10#20
+POPULATION_SIZE = 8
+PARENTS_COUNT = 4
+WORKERS_COUNT = 2
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -204,14 +204,21 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
     #device = "cuda" if args.cuda else "cpu"
-    device0 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device1 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    #device0 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #device1 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    devices = []
+
+    gpu_number = torch.cuda.device_count()
 
     logger.debug("gpu number:{0}".format(torch.cuda.device_count()))
+    if gpu_number >= 1 and args.cuda:
+        for i in range(gpu_number):
+            devices.append("cuda:{0}".format(i))
+    else:
+        devices.append("cpu")
 
-    if torch.cuda.device_count() > 1:
-        device1 = "cuda:1" if args.cuda else "cpu"
-
+    # if torch.cuda.device_count() > 1:
+    #     device1 = "cuda:1" if args.cuda else "cpu"
     env = make_env()
     #noise_step = 0.04
     #noise_step = np.random.normal(scale=0.5)
@@ -220,13 +227,12 @@ if __name__ == "__main__":
     parents = []
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
-        net = build_net(env, seed).to(device0)
+        net = build_net(env, seed).to(devices[0])
         parents.append(net.state_dict())
 
-    logger.debug("Before++++, current_process: {0},parents[0]:{1}".format(mp.current_process(), parents[0]['fc.2.bias']))
+    logger.debug("Before++++, current_process: {0},parents[0]:{1},devices:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], devices))
 
     input_queues = []
-    #count = 0
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
     workers = []
     probability = []
@@ -237,10 +243,11 @@ if __name__ == "__main__":
     for j in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
-        if j >= (WORKERS_COUNT/2-1):
-            w = mp.Process(target=worker_func, args=(input_queue, output_queue, device1))
+        if gpu_number >= 1 and args.cuda:
+            device_id = j % gpu_number
+            w = mp.Process(target=worker_func, args=(input_queue, output_queue, devices[device_id]))
         else:
-            w = mp.Process(target=worker_func, args=(input_queue, output_queue, device0))
+            w = mp.Process(target=worker_func, args=(input_queue, output_queue, devices[0]))
         w.start()
         input_queue.put((parents, probability, None))
 
