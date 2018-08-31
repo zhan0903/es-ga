@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000#600#1000
-PARENTS_COUNT = 20
-WORKERS_COUNT = 20#10#20
-# POPULATION_SIZE = 40
-# PARENTS_COUNT = 4
-# WORKERS_COUNT = 4
+# POPULATION_SIZE = 1000#600#1000
+# PARENTS_COUNT = 20
+# WORKERS_COUNT = 20#10#20
+POPULATION_SIZE = 120
+PARENTS_COUNT = 4
+WORKERS_COUNT = 12
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
