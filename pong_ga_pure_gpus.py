@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-# POPULATION_SIZE = 1000#600#1000
-# PARENTS_COUNT = 20
-# WORKERS_COUNT = 20#10#20
-POPULATION_SIZE = 120
-PARENTS_COUNT = 4
-WORKERS_COUNT = 12
+POPULATION_SIZE = 1000#600#1000
+PARENTS_COUNT = 20
+WORKERS_COUNT = 20#10#20
+# POPULATION_SIZE = 120
+# PARENTS_COUNT = 4
+# WORKERS_COUNT = 12
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -131,7 +131,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     parent_list = []
     reward_max_temp = None
     count = 0
-    CUDA_VISIBLE_DEVICES = device_w
+    #CUDA_VISIBLE_DEVICES = device_w
     scale_step = 0.8
 
     for i in range(PARENTS_COUNT):
@@ -158,7 +158,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
             elif count == 4:
                 scale_step = 0.3
             else:
-                scale_step = 0.2
+                scale_step = 0.1
         else:
             count = 0
             scale_step = 0.8
