@@ -13,7 +13,7 @@ import logging
 
 import torch
 import torch.nn as nn
-import torch.multiprocessing as mp
+import multiprocessing as mp
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
@@ -131,6 +131,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     parent_list = []
     reward_max_temp = None
     count = 0
+    import torch
     device_w_id = int(device_w[-1])
     torch.cuda.set_device(device_w_id)
     #CUDA_VISIBLE_DEVICES = device_w
@@ -139,7 +140,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
     #parent_list = [0, 1]
-    logger.debug("in work_func,current_process: {0},parent_list:{1}".format(mp.current_process(), parent_list))
+    logger.debug("in work_func,current_process: {0},parent_list:{1},device_w_id:{2}".format(mp.current_process(),
+                                                                                            parent_list, device_w_id))
 
     while True:
         get_item = input_queue.get()
