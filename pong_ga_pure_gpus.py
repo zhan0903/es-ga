@@ -131,6 +131,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     parent_list = []
     reward_max_temp = None
     count = 0
+    CUDA_VISIBLE_DEVICES = device_w
     scale_step = 0.8
 
     for i in range(PARENTS_COUNT):
@@ -208,7 +209,7 @@ if __name__ == "__main__":
     #device1 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     devices = []
 
-    gpu_number = torch.cuda.device_count()
+    gpu_number = 2#torch.cuda.device_count()
 
     logger.debug("gpu number:{0}".format(torch.cuda.device_count()))
     if gpu_number >= 1 and args.cuda:
