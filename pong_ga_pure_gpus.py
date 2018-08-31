@@ -131,7 +131,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     parent_list = []
     reward_max_temp = None
     count = 0
-    #scale_step = 0.1
+    scale_step = 0.8
 
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
@@ -165,9 +165,9 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
         #noise_step = np.random.normal(scale=scale_step)
 
-        logger.debug(
-            "in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
-            format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list, noise_step))
+        #logger.debug(
+        #    "in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
+        #    format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list, noise_step))
 
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
