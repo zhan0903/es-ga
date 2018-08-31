@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-POPULATION_SIZE = 1000#600#1000
-PARENTS_COUNT = 20
-WORKERS_COUNT = 20#10#20
-# POPULATION_SIZE = 120
-# PARENTS_COUNT = 4
-# WORKERS_COUNT = 12
+# POPULATION_SIZE = 1000#600#1000
+# PARENTS_COUNT = 20
+# WORKERS_COUNT = 20#10#20
+POPULATION_SIZE = 120
+PARENTS_COUNT = 4
+WORKERS_COUNT = 12
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -153,12 +153,12 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
         if reward_max_w and (reward_max_w == reward_max_temp):
             count = count + 1
-            if count == 2:
+            if count >= 2:
                 scale_step = 0.6
-            elif count == 4:
+            if count >= 4:
                 scale_step = 0.3
-            else:
-                scale_step = 0.1
+            if count >= 5:
+                scale_step = 0.2
         else:
             count = 0
             scale_step = 0.8
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     #device1 = "cuda:0" if args.cuda else "cpu"#torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     devices = []
 
-    gpu_number = 2#torch.cuda.device_count()
+    gpu_number = torch.cuda.device_count()
 
     logger.debug("gpu number:{0}".format(torch.cuda.device_count()))
     if gpu_number >= 1 and args.cuda:
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     parents = []
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
-        net = build_net(env, seed).to(devices[0])
+        net = build_net(env, seed)#.to(devices[0])
         parents.append(net.state_dict())
 
     logger.debug("Before++++, current_process: {0},parents[0]:{1},devices:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], devices))
