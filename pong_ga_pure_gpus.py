@@ -129,6 +129,10 @@ def build_net(env, seeds, device="cpu"):
 def worker_func(input_queue, output_queue, device_w="cpu"):
     new_env = make_env()
     parent_list = []
+    reward_max_temp = None
+    count = 0
+    #scale_step = 0.1
+
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
     #parent_list = [0, 1]
@@ -138,19 +142,36 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
         get_item = input_queue.get()
         parents_w = get_item[0]
         pro_list = get_item[1]
-        noise_step_w = get_item[2]
+        reward_max_w = get_item[2]
+        #reward_max_w = get_item[3]
 
         batch_steps_w = 0
         child = []
         logger.debug("in worker_func, current_process: {0},parents[0][0]:{1},len of parents:{2},pro_list:{3}, noise_step_w:{4}".
                      format(mp.current_process(), parents_w[0]['fc.2.bias'], len(parents_w), pro_list, noise_step_w))
+
+        if reward_max_w and (reward_max_w == reward_max_temp):
+            count = count + 1
+            if count == 2:
+                scale_step = 0.5
+            elif count == 4:
+                scale_step = 0.3
+            else:
+                scale_step = 0.2
+        else:
+            count = 0
+            scale_step = 0.8
+            reward_max_temp = reward_max_w
+
+        noise_step = np.random.normal(scale=scale_step)
+
         for _ in range(SEEDS_PER_WORKER):
             #solve pro do not sum to 1
             pro_list = np.array(pro_list)
             pro_list = pro_list/sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step_w).to(device_w)
+            child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step).to(device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
             batch_steps_w += steps
             child.append((child_net.state_dict(), reward, steps))
@@ -188,7 +209,7 @@ if __name__ == "__main__":
 
     env = make_env()
     #noise_step = 0.04
-    noise_step = np.random.normal(scale=0.5)
+    #noise_step = np.random.normal(scale=0.5)
 
     #create PARENTS_COUNT parents
     parents = []
@@ -200,7 +221,7 @@ if __name__ == "__main__":
     logger.debug("Before++++, current_process: {0},parents[0]:{1}".format(mp.current_process(), parents[0]['fc.2.bias']))
 
     input_queues = []
-    count = 0
+    #count = 0
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
     workers = []
     probability = []
@@ -216,13 +237,13 @@ if __name__ == "__main__":
         else:
             w = mp.Process(target=worker_func, args=(input_queue, output_queue, device0))
         w.start()
-        input_queue.put((parents, probability, noise_step))
+        input_queue.put((parents, probability, None))
 
     gen_idx = 0
     elite = None
-    reward_max_temp = 0
-    count = 0
-    scale = 0.1
+    #reward_max_temp = 0
+    #count = 0
+    #scale = 0.1
 
     while True:
         t_start = time.time()
@@ -271,20 +292,20 @@ if __name__ == "__main__":
             #deep copy solve the invalid device bug
             next_parents.append(copy.deepcopy(top_children[i][0]))
 
-        if reward_max == reward_max_temp:
-            count = count + 1
-            if count == 2:
-                scale = 0.3
-            elif count == 4:
-                scale = 0.5
-            else:
-                scale = 0.8
-        else:
-            count = 0
-            scale = 0.1
-            reward_max_temp = reward_max
-
-        noise_step = np.random.normal(scale=scale)
+        # if reward_max == reward_max_temp:
+        #     count = count + 1
+        #     if count == 2:
+        #         scale = 0.3
+        #     elif count == 4:
+        #         scale = 0.5
+        #     else:
+        #         scale = 0.8
+        # else:
+        #     count = 0
+        #     scale = 0.1
+        #     reward_max_temp = reward_max
+        #
+        # noise_step = np.random.normal(scale=scale)
         # if reward_max == reward_max_temp:
         #     if count >= 3:
         #         # m = torch.distributions.normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
@@ -295,7 +316,7 @@ if __name__ == "__main__":
         #     count = 0
 
         for worker_queue in input_queues:
-            worker_queue.put((next_parents, probability, noise_step))
+            worker_queue.put((next_parents, probability, reward_max))
         logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
                      "len of new_parents:{3}, type of new_parents:{4}".
                      format(mp.current_process(), next_parents[0]['fc.2.bias'], next_parents[1]['fc.2.bias'],
