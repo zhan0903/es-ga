@@ -215,8 +215,6 @@ if __name__ == "__main__":
     if gpu_number >= 1 and args.cuda:
         for i in range(gpu_number):
             devices.append("cuda:{0}".format(i))
-    else:
-        devices.append("cpu")
 
     env = make_env()
 
@@ -245,9 +243,9 @@ if __name__ == "__main__":
             logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
             w = mp.Process(target=worker_func, args=(input_queue, output_queue, devices[device_id]))
         else:
-            w = mp.Process(target=worker_func, args=(input_queue, output_queue, devices[0]))
+            w = mp.Process(target=worker_func, args=(input_queue, output_queue, "cpu"))
         w.start()
-        w.join()
+        #w.join()
         input_queue.put((parents, probability, None))
 
     gen_idx = 0
