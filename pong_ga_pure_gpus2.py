@@ -226,7 +226,7 @@ if __name__ == "__main__":
         #parents.append(net.state_dict())
         parents.append(seed)
 
-    logger.debug("Before++++, current_process: {0},parents[0]:{1},devices:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], devices))
+    #logger.debug("Before++++, current_process: {0},parents[0]:{1},devices:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], devices))
 
     input_queues = []
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
