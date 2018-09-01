@@ -224,7 +224,7 @@ if __name__ == "__main__":
     parents = []
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
-        net = build_net(env, seed).to(devices[0])
+        net = build_net(env, seed).to(devices[1])
         parents.append(net.state_dict())
 
     logger.debug("Before++++, current_process: {0},parents[0]:{1},devices:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], devices))
