@@ -132,8 +132,8 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     reward_max_temp = None
     count = 0
     #import torch
-    #device_w_id = int(device_w[-1])
-    #torch.cuda.set_device(device_w_id)
+    device_w_id = int(device_w[-1])
+    torch.cuda.set_device(device_w_id)
     #CUDA_VISIBLE_DEVICES = device_w
     scale_step = 0.8
 
