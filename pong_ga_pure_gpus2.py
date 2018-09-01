@@ -144,7 +144,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
     while True:
         get_item = input_queue.get()
-        parents_w = get_item[0]
+        parents_w = get_item[0].cuda(device_w)
         pro_list = get_item[1]
         reward_max_w = get_item[2]
         #reward_max_w = get_item[3]
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     parents = []
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
-        net = build_net(env, seed).to(devices[1])
+        net = build_net(env, seed)#.to(devices[1])
         parents.append(net.state_dict())
 
     logger.debug("Before++++, current_process: {0},parents[0]:{1},devices:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], devices))
