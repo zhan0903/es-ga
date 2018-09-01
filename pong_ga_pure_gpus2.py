@@ -136,6 +136,7 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     torch.cuda.set_device(device_w_id)
     #CUDA_VISIBLE_DEVICES = device_w
     scale_step = 0.8
+    guid = True
 
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
@@ -144,7 +145,15 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
 
     while True:
         get_item = input_queue.get()
-        parents_w = get_item[0].to(device_w)
+        parents_w = get_item[0]
+        if guid:
+            parents = []
+            for i in range(len(parents_w)):
+                net = build_net(new_env, parents_w[i]).to(device_w)
+                parents.append(net.state_dict())
+            guid = False
+            parents_w = parents
+
         pro_list = get_item[1]
         reward_max_w = get_item[2]
         #reward_max_w = get_item[3]
