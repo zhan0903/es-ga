@@ -239,20 +239,20 @@ if __name__ == "__main__":
     for j in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
-        # if gpu_number >= 1 and args.cuda:
-        #     device_id = j % gpu_number
-        #     logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
-        with mp.Pool(processes=WORKERS_COUNT) as pool:
-            if gpu_number >= 1 and args.cuda:
-                device_id = j % gpu_number
-                logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
-                pool.apply_async(worker_func, (input_queue, output_queue, devices[device_id]))
-            else:
-                pool.apply_async(worker_func, (input_queue, output_queue, "cpu"))
-            #w = mp.Process(target=worker_func, args=(input_queue, output_queue, devices[device_id]))
-        # else:
-        #     w = mp.Process(target=worker_func, args=(input_queue, output_queue, "cpu"))
-        #w.start()
+        if gpu_number >= 1 and args.cuda:
+            device_id = j % gpu_number
+            logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
+            w = mp.Process(target=worker_func, args=(input_queue, output_queue, devices[device_id]))
+        else:
+            w = mp.Process(target=worker_func, args=(input_queue, output_queue, "cpu"))
+        # with mp.Pool(processes=WORKERS_COUNT) as pool:
+        #     if gpu_number >= 1 and args.cuda:
+        #         device_id = j % gpu_number
+        #         logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
+        #         pool.apply_async(worker_func, (input_queue, output_queue, devices[device_id]))
+        #     else:
+        #         pool.apply_async(worker_func, (input_queue, output_queue, "cpu"))
+        w.start()
         #w.join()
         input_queue.put((parents, probability, None))
 
