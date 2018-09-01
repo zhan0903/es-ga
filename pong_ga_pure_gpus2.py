@@ -247,6 +247,7 @@ if __name__ == "__main__":
         else:
             w = mp.Process(target=worker_func, args=(input_queue, output_queue, devices[0]))
         w.start()
+        w.join()
         input_queue.put((parents, probability, None))
 
     gen_idx = 0
