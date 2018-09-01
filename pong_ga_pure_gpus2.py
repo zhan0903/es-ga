@@ -20,12 +20,12 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 
-# POPULATION_SIZE = 1000#600#1000
-# PARENTS_COUNT = 20
-# WORKERS_COUNT = 20#10#20
-POPULATION_SIZE = 120
-PARENTS_COUNT = 4
-WORKERS_COUNT = 12
+POPULATION_SIZE = 1000#600#1000
+PARENTS_COUNT = 20
+WORKERS_COUNT = 20#10#20
+# POPULATION_SIZE = 120
+# PARENTS_COUNT = 4
+# WORKERS_COUNT = 12
 
 #NOISE_STD = 0.01
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
@@ -131,17 +131,16 @@ def worker_func(input_queue, output_queue, device_w="cpu"):
     parent_list = []
     reward_max_temp = None
     count = 0
-    import torch
-    device_w_id = int(device_w[-1])
-    torch.cuda.set_device(device_w_id)
+    #import torch
+    #device_w_id = int(device_w[-1])
+    #torch.cuda.set_device(device_w_id)
     #CUDA_VISIBLE_DEVICES = device_w
     scale_step = 0.8
 
     for i in range(PARENTS_COUNT):
         parent_list.append(i)
     #parent_list = [0, 1]
-    logger.debug("in work_func,current_process: {0},parent_list:{1},device_w_id:{2}".format(mp.current_process(),
-                                                                                            parent_list, device_w_id))
+    logger.debug("in work_func,current_process: {0},parent_list:{1}".format(mp.current_process(), parent_list))
 
     while True:
         get_item = input_queue.get()
@@ -297,11 +296,11 @@ if __name__ == "__main__":
         logger.debug("probability:{0}".format(probability))
 
         next_parents = []
-        elite_t = Net(env.observation_space.shape, env.action_space.n)
-        elite_t.load_state_dict(top_children[0][0])
-        elite_t = elite_t.state_dict()
-        elite = (elite_t, top_children[0][1])#copy.deepcopy(top_children[0])
-        logger.debug("top_chidern[9]['fc.2.bias']:{0},elite:{1}".format(top_children[9][0]['fc.2.bias'], elite[0]['fc.2.bias']))
+        # elite_t = Net(env.observation_space.shape, env.action_space.n)
+        # elite_t.load_state_dict(top_children[0][0])
+        # elite_t = elite_t.state_dict()
+        # elite = (elite_t, top_children[0][1])#copy.deepcopy(top_children[0])
+        #logger.debug("top_chidern[9]['fc.2.bias']:{0},elite:{1}".format(top_children[9][0]['fc.2.bias'], elite[0]['fc.2.bias']))
 
         for i in range(PARENTS_COUNT):
             # copy tensor from gpu to cpu
@@ -310,7 +309,7 @@ if __name__ == "__main__":
             next_parents.append(next_parent.state_dict())
             # deep copy solve the invalid device bug
             # next_parents.append(copy.deepcopy(top_children[i][0]))
-
+        elite = (next_parents[0], top_children[0][1])
         for worker_queue in input_queues:
             worker_queue.put((next_parents, probability, reward_max))
         logger.debug("After----, current_process: {0},new_parents[0]['fc.2.bias']:{1},new_parents[1]['fc.2.bias']:{2}, "
