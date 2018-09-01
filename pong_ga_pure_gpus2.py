@@ -32,7 +32,7 @@ SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -222,8 +222,9 @@ if __name__ == "__main__":
     parents = []
     for i in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
-        net = build_net(env, seed)#.to(devices[1])
-        parents.append(net.state_dict())
+        #net = build_net(env, seed)#.to(devices[1])
+        #parents.append(net.state_dict())
+        parents.append(seed)
 
     logger.debug("Before++++, current_process: {0},parents[0]:{1},devices:{2}".format(mp.current_process(), parents[0]['fc.2.bias'], devices))
 
