@@ -135,7 +135,7 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
         t_start = time.time()
         batch_steps_w = 0
         child = []
-        noise_step = np.random.normal(scale=scale_step_w)
+        noise_step = scale_step_w  # np.random.normal(scale=scale_step_w)
         logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(), parents[0].state_dict()['fc.2.bias']))
         for _ in range(POPULATION_PER_WORKER):
             # solve pro do not sum to 1
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     time_start = time.time()
 
     for j in range(WORKERS_COUNT):
-        scale_step = (j+1)*0.025
+        scale_step = (j+1)*0.001
         if gpu_number >= 1 and args.cuda:
             device_id = j % gpu_number
             logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))

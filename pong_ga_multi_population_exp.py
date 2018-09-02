@@ -25,9 +25,9 @@ from tensorboardX import SummaryWriter
 # POPULATION_PER_WORKER = 100
 
 # debug
-PARENTS_COUNT = 10
-WORKERS_COUNT = 10
-POPULATION_PER_WORKER = 50
+PARENTS_COUNT = 2
+WORKERS_COUNT = 2
+POPULATION_PER_WORKER = 4
 
 MAX_SEED = 2**32 - 1
 
@@ -205,7 +205,6 @@ if __name__ == "__main__":
             w = mp.Process(target=worker_func, args=(output_queue, scale_step, "cpu"))
         w.start()
         input_queue.put(share_parents.state_dict())
-
 
     gen_idx = 0
     while True:
