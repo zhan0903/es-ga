@@ -22,7 +22,7 @@ from tensorboardX import SummaryWriter
 # test
 PARENTS_COUNT = 10
 WORKERS_COUNT = 24
-POPULATION_PER_WORKER = 200
+POPULATION_PER_WORKER = 100
 
 # debug
 # PARENTS_COUNT = 10
@@ -135,7 +135,7 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
         t_start = time.time()
         batch_steps_w = 0
         child = []
-        noise_step = 0.005# np.random.normal(scale=scale_step_w)
+        noise_step = np.random.normal(scale=scale_step_w) # 0.005
         logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(), parents[0].state_dict()['fc.2.bias']))
         for _ in range(POPULATION_PER_WORKER):
             # solve pro do not sum to 1
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     time_start = time.time()
 
     for j in range(WORKERS_COUNT):
-        scale_step = 0.2# (j+1)*0.05
+        scale_step = (j+1)*0.025  # 0.2
         if gpu_number >= 1 and args.cuda:
             device_id = j % gpu_number
             logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
