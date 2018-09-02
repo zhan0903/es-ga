@@ -129,14 +129,15 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
     for _ in range(PARENTS_COUNT):
         pro_list.append(1 / PARENTS_COUNT)
 
-    logger.debug("in work_func,current_process: {0},parent_list:{1},scale_step_w:{2}".
-                 format(mp.current_process(), parent_list, scale_step_w))
+    #logger.debug("in work_func,current_process: {0},parent_list:{1},scale_step_w:{2}".
+    #             format(mp.current_process(), parent_list, scale_step_w))
 
     while True:
         t_start = time.time()
         batch_steps_w = 0
         child = []
         noise_step = np.random.normal(scale=scale_step_w)
+        logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(), parents[0].state_dict()['fc.2.bias']))
         for _ in range(POPULATION_PER_WORKER):
             # solve pro do not sum to 1
             pro_list = np.array(pro_list)
@@ -157,8 +158,10 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
         for l in range(PARENTS_COUNT):
             value_d.append(child[l][1])
         pro_list = F.softmax(torch.tensor(value_d), dim=0)
+        logger.debug("After, current_process: {0}, parents[0]:{1},child[0]:{2}".format(mp.current_process(),
+                     parents[0].state_dict()['fc.2.bias'], child[0][0].state_dict()['fc.2.bias']))
         logger.debug("current_process: {0},len of child:{1}, value_d:{2}, pro_list:{3},reward_max_p:{4}".
-                     format(mp.current_process(), len(child), value_d, pro_list, parents[0][1]))
+                     format(mp.current_process(), len(child), value_d, pro_list, child[0][1]))
         output_queue_w.put(OutputItem(reward_max_p=child[0][1], speed_p=speed_p))
 
 
