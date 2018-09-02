@@ -20,7 +20,7 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 # test
-PARENTS_COUNT = 20
+PARENTS_COUNT = 10
 WORKERS_COUNT = 20
 POPULATION_PER_WORKER = 100
 
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     time_start = time.time()
 
     for j in range(WORKERS_COUNT):
-        scale_step = 0.2# (j+1)*0.05
+        scale_step = (j+1)*0.025
         if gpu_number >= 1 and args.cuda:
             device_id = j % gpu_number
             logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
