@@ -21,8 +21,8 @@ from tensorboardX import SummaryWriter
 
 # test
 PARENTS_COUNT = 20
-WORKERS_COUNT = 10
-POPULATION_PER_WORKER = 200
+WORKERS_COUNT = 20
+POPULATION_PER_WORKER = 100
 
 # debug
 # PARENTS_COUNT = 10
@@ -130,9 +130,6 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
     for _ in range(PARENTS_COUNT):
         pro_list.append(1 / PARENTS_COUNT)
 
-    #logger.debug("in work_func,current_process: {0},parent_list:{1},scale_step_w:{2}".
-    #             format(mp.current_process(), parent_list, scale_step_w))
-
     while True:
         t_start = time.time()
         batch_steps_w = 0
@@ -186,7 +183,7 @@ if __name__ == "__main__":
     time_start = time.time()
 
     for j in range(WORKERS_COUNT):
-        scale_step = (j+1)*0.05
+        scale_step = 0.2# (j+1)*0.05
         if gpu_number >= 1 and args.cuda:
             device_id = j % gpu_number
             logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
