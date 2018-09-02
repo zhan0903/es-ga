@@ -20,14 +20,14 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 # test
-PARENTS_COUNT = 20
-WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 100
+# PARENTS_COUNT = 20
+# WORKERS_COUNT = 20
+# POPULATION_PER_WORKER = 100
 
 # debug
-# PARENTS_COUNT = 10
-# WORKERS_COUNT = 10
-# POPULATION_PER_WORKER = 50
+PARENTS_COUNT = 10
+WORKERS_COUNT = 10
+POPULATION_PER_WORKER = 50
 
 MAX_SEED = 2**32 - 1
 
@@ -184,8 +184,18 @@ if __name__ == "__main__":
     env = make_env()
     output_queue = mp.Queue(maxsize=WORKERS_COUNT)
     time_start = time.time()
+    share_parents = []
+    input_queues = []
+
+    # create PARENTS_COUNT parents to share
+    for _ in range(PARENTS_COUNT):
+        share_parent = Net(env.observation_space.shape, env.action_space.n)
+        share_parent.share_memory()
+        share_parents.append(share_parent)
 
     for j in range(WORKERS_COUNT):
+        input_queue = mp.Queue(maxsize=1)
+        input_queues.append(input_queue)
         scale_step = 0.2# (j+1)*0.05
         if gpu_number >= 1 and args.cuda:
             device_id = j % gpu_number
@@ -194,6 +204,8 @@ if __name__ == "__main__":
         else:
             w = mp.Process(target=worker_func, args=(output_queue, scale_step, "cpu"))
         w.start()
+        input_queue.put(share_parents.state_dict())
+
 
     gen_idx = 0
     while True:

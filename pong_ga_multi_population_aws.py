@@ -20,9 +20,9 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 # test
-PARENTS_COUNT = 20
-WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 100
+PARENTS_COUNT = 10
+WORKERS_COUNT = 24
+POPULATION_PER_WORKER = 200
 
 # debug
 # PARENTS_COUNT = 10
@@ -135,7 +135,7 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
         t_start = time.time()
         batch_steps_w = 0
         child = []
-        noise_step = np.random.normal(scale=scale_step_w)
+        noise_step = 0.005# np.random.normal(scale=scale_step_w)
         logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(), parents[0].state_dict()['fc.2.bias']))
         for _ in range(POPULATION_PER_WORKER):
             # solve pro do not sum to 1
