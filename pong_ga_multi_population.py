@@ -19,20 +19,19 @@ from torch.utils.data import Dataset, DataLoader
 
 from tensorboardX import SummaryWriter
 
-
-# POPULATION_SIZE = 1000#600#1000
+# # test
 # PARENTS_COUNT = 20
-# WORKERS_COUNT = 10#10#20
-#POPULATION_SIZE = 120
-PARENTS_COUNT = 20
-WORKERS_COUNT = 20
+# WORKERS_COUNT = 20
+# POPULATION_PER_WORKER = 100
+# debug
+PARENTS_COUNT = 10
+WORKERS_COUNT = 10
+POPULATION_PER_WORKER = 50
 
-#NOISE_STD = 0.01
-POPULATION_PER_WORKER = 100
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -89,13 +88,11 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(net, seed, noise_std, copy_net=True):
+def mutate_net(net, seed, noise_std, device):
     new_net = copy.deepcopy(net)
-    #new_net.cuda()
-    #logger.debug("new_net")
     np.random.seed(seed)
     for p in new_net.parameters():
-        noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).cuda()
+        noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
         p.data += noise_std * noise_t
     return new_net
 
@@ -146,7 +143,7 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
             pro_list = pro_list/sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(parents[parent], child_seed, noise_step).to(device_w)
+            child_net = mutate_net(parents[parent], child_seed, noise_step, device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
             batch_steps_w += steps
             child.append((child_net, reward))
@@ -160,8 +157,8 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
         for l in range(PARENTS_COUNT):
             value_d.append(child[l][1])
         pro_list = F.softmax(torch.tensor(value_d), dim=0)
-        logger.debug("current_process: {0},len of child:{1}, value_d:{2}, pro_list:{3}".
-                     format(mp.current_process(), len(child), value_d, pro_list))
+        logger.debug("current_process: {0},len of child:{1}, value_d:{2}, pro_list:{3},reward_max_p:{4}".
+                     format(mp.current_process(), len(child), value_d, pro_list, child[0][1]))
         output_queue_w.put(OutputItem(reward_max_p=child[0][1], speed_p=speed_p))
 
 
@@ -185,7 +182,7 @@ if __name__ == "__main__":
     time_start = time.time()
 
     for j in range(WORKERS_COUNT):
-        scale_step = j*0.05
+        scale_step = (j+1)*0.05
         if gpu_number >= 1 and args.cuda:
             device_id = j % gpu_number
             logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
