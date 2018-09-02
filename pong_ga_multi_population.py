@@ -158,7 +158,7 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
             value_d.append(child[l][1])
         pro_list = F.softmax(torch.tensor(value_d), dim=0)
         logger.debug("current_process: {0},len of child:{1}, value_d:{2}, pro_list:{3},reward_max_p:{4}".
-                     format(mp.current_process(), len(child), value_d, pro_list, child[0][1]))
+                     format(mp.current_process(), len(child), value_d, pro_list, parents[0][1]))
         output_queue_w.put(OutputItem(reward_max_p=child[0][1], speed_p=speed_p))
 
 
