@@ -24,15 +24,15 @@ from tensorboardX import SummaryWriter
 # PARENTS_COUNT = 20
 # WORKERS_COUNT = 10#10#20
 #POPULATION_SIZE = 120
-PARENTS_COUNT = 2
-WORKERS_COUNT = 2
+PARENTS_COUNT = 20
+WORKERS_COUNT = 20
 
 #NOISE_STD = 0.01
-POPULATION_PER_WORKER = 10
+POPULATION_PER_WORKER = 100
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
