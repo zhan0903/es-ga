@@ -32,7 +32,7 @@ POPULATION_PER_WORKER = 100
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -159,8 +159,8 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         reward_max_w = top_children_w[0][1]
         if reward_max_w != -21:
             logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
-                         format(mp.current_process(), top_children_w[0][0].state_dict()['fc.2.bias'],
-                                child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
+                         format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
+                                child[0][0]['fc.2.bias'], top_children_w[0][1]))
         output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
@@ -211,7 +211,7 @@ if __name__ == "__main__":
         input_queue.put((share_parents, pro))
 
     gen_idx = 0
-    logger.debug("come to while True")
+    logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parent[0]['fc.2.bias']))
     while True:
         top_children = []
         speed = 0
@@ -241,7 +241,7 @@ if __name__ == "__main__":
         assert len(top_children) == 24
         for i in range(PARENTS_COUNT):
             next_parents.append(copy.deepcopy(top_children[i][0]))
-        logger.debug("Main, next_parents[0]:{0}".format(next_parents[0].state_dict()['fc.2.bias']))
+        logger.debug("Main, next_parents[0]:{0}".format(next_parents[0]['fc.2.bias']))
         value_d = []
         for l in range(PARENTS_COUNT):
             value_d.append(top_children[l][1])
