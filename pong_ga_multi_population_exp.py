@@ -133,7 +133,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         # parents_w = get_item[0]
         # pro_list = get_item[1]
 
-        with open(r"my_trainer_objects.pkl", "wb") as input_file:
+        with open(r"my_trainer_objects.pkl", "rb") as input_file:
             parents_w = pickle.load(input_file)
 
         assert len(parents_w) == PARENTS_COUNT
