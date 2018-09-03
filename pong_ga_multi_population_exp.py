@@ -21,7 +21,7 @@ from tensorboardX import SummaryWriter
 
 # test
 PARENTS_COUNT = 10
-WORKERS_COUNT = 20
+WORKERS_COUNT = 10
 POPULATION_PER_WORKER = 100
 
 # # debug
@@ -163,7 +163,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
 
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')
+    #mp.set_start_method('spawn')
     writer = SummaryWriter(comment="-pong-ga-multi-population")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
@@ -209,6 +209,7 @@ if __name__ == "__main__":
         input_queue.put((share_parents, pro))
 
     gen_idx = 0
+    logger.debug("come to while True")
     while True:
         top_children = []
         speed = 0
