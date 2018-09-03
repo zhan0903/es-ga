@@ -200,7 +200,7 @@ if __name__ == "__main__":
         share_parents.append(share_parent.state_dict())
 
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
-        pickle.dump(share_parent, output_file, True)
+        pickle.dump(share_parents, output_file, True)
 
     value_d = []
     for l in range(PARENTS_COUNT):
