@@ -25,9 +25,9 @@ from tensorboardX import SummaryWriter
 # POPULATION_PER_WORKER = 100
 
 # debug
-PARENTS_COUNT = 2
-WORKERS_COUNT = 4
-POPULATION_PER_WORKER = 10
+PARENTS_COUNT = 3
+WORKERS_COUNT = 8
+POPULATION_PER_WORKER = 50
 
 MAX_SEED = 2**32 - 1
 
@@ -128,9 +128,6 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
 
     for m in range(PARENTS_COUNT):
         parent_list.append(m)
-    # pro_list = []
-    # for _ in range(PARENTS_COUNT):
-    #     pro_list.append(1 / PARENTS_COUNT)
 
     elite = None
     while True:
@@ -141,13 +138,6 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         parents_w = get_item[0]
         pro_list = get_item[1]
 
-
-        # value_d = []
-        # for l in range(PARENTS_COUNT):
-        #     value_d.append(parents_w[l][1])
-        # pro_list = F.softmax(torch.tensor(value_d), dim=0)
-
-        #print("parent_w:{0}".format(parents_w[0]))
         noise_step = np.random.normal(scale=scale_step_w)
         logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(), parents_w[0].state_dict()['fc.2.bias']))
         for _ in range(POPULATION_PER_WORKER):
@@ -168,7 +158,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         top_children_w = []
         # out_item = (reward_max_p, speed_p)
         for k in range(PARENTS_COUNT):
-            top_children_w.append((child[k][0], child[k][1]))
+            top_children_w.append((child[k][0].cpu(), child[k][1]))
         logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2}".format(mp.current_process(),
                      top_children_w[0][0].state_dict()['fc.2.bias'], child[0][0].state_dict()['fc.2.bias']))
         logger.debug("current_process: {0},len of child:{1}, pro_list:{2},reward_max_p:{3}".
