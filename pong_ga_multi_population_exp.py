@@ -159,10 +159,9 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         # out_item = (reward_max_p, speed_p)
         for k in range(PARENTS_COUNT):
             top_children_w.append((child[k][0].cpu(), child[k][1]))
-        logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2}".format(mp.current_process(),
-                     top_children_w[0][0].state_dict()['fc.2.bias'], child[0][0].state_dict()['fc.2.bias']))
-        logger.debug("current_process: {0},len of child:{1}, pro_list:{2},reward_max_p:{3}".
-                     format(mp.current_process(), len(child), pro_list, child[0][1]))
+        logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
+                     format(mp.current_process(), top_children_w[0][0].state_dict()['fc.2.bias'],
+                            child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
         output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
@@ -236,12 +235,10 @@ if __name__ == "__main__":
         if reward_mean == 21:
             exit(0)
         next_parents = []
-        #for i in range(PARENTS_COUNT):
-        #    share_parents[i] = copy.deepcopy(top_children[i][0])
         for i in range(PARENTS_COUNT):
             next_parents.append(copy.deepcopy(top_children[i][0]))
-        logger.debug("After, current_process: {0}, len of next_parents:{1},next_parents[0]:{2}".
-                     format(mp.current_process(), len(next_parents), next_parents[0].state_dict()['fc.2.bias']))
+        logger.debug("Main process: {0}, len of next_parents:{1},next_parents[0]:{2}".
+                     format(len(next_parents), next_parents[0].state_dict()['fc.2.bias']))
         value_d = []
         for l in range(PARENTS_COUNT):
             value_d.append(top_children[l][1])
