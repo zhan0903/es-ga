@@ -163,7 +163,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
 
 
 if __name__ == "__main__":
-    #mp.set_start_method('spawn')
+    mp.set_start_method('spawn')
     writer = SummaryWriter(comment="-pong-ga-multi-population")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
@@ -186,9 +186,9 @@ if __name__ == "__main__":
     for _ in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
-        share_parent = Net(env.observation_space.shape, env.action_space.n)
-        share_parent.share_memory()
-        share_parents.append(share_parent.state_dict())
+        share_parent = Net(env.observation_space.shape, env.action_space.n).cuda()
+        #share_parent.share_memory()
+        share_parents.append(share_parent)#.state_dict())
 
     value_d = []
     for l in range(PARENTS_COUNT):
