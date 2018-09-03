@@ -23,7 +23,7 @@ from tensorboardX import SummaryWriter
 # test
 PARENTS_COUNT = 10
 WORKERS_COUNT = 10
-POPULATION_PER_WORKER = 100
+POPULATION_PER_WORKER = 20
 
 # # debug
 # PARENTS_COUNT = 3
