@@ -240,6 +240,8 @@ if __name__ == "__main__":
         if reward_mean == 21:
             exit(0)
         next_parents = []
+        logger.debug("len of top_children:{0}".format(len(top_children)))
+        assert len(top_children) == 24
         for i in range(PARENTS_COUNT):
             next_parents.append(copy.deepcopy(top_children[i][0]))
         logger.debug("Main process: {0}, len of next_parents:{1},next_parents[0]:{2}".
