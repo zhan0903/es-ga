@@ -26,8 +26,8 @@ from tensorboardX import SummaryWriter
 
 # debug
 PARENTS_COUNT = 2
-WORKERS_COUNT = 2
-POPULATION_PER_WORKER = 4
+WORKERS_COUNT = 4
+POPULATION_PER_WORKER = 10
 
 MAX_SEED = 2**32 - 1
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     # create PARENTS_COUNT parents to share
     for _ in range(PARENTS_COUNT):
         share_parent = Net(env.observation_space.shape, env.action_space.n)
-        share_parent.share_memory()
+        #share_parent.share_memory()
         share_parents.append(share_parent)
 
     value_d = []
