@@ -91,7 +91,7 @@ def evaluate(env, net, device="cpu"):
 
 def mutate_net(net, seed, noise_std, device):
     new_net = copy.deepcopy(net).to(device)
-    new_net.share_memory()
+    #new_net.share_memory()
     np.random.seed(seed)
     for p in new_net.parameters():
         noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
@@ -250,8 +250,8 @@ if __name__ == "__main__":
         #    share_parents[i] = copy.deepcopy(top_children[i][0])
         for i in range(PARENTS_COUNT):
             next_parents.append(copy.deepcopy(top_children[i][0]))
-        logger.debug("After, len of next_parents:{0},next_parents[0]{1}".format(len(next_parents),
-                     next_parents[0].state_dict()['fc.2.bias']))
+        logger.debug("After, current_process: {0}, len of next_parents:{1},next_parents[0]:{2}".
+                     format(mp.current_process(), len(next_parents), next_parents[0].state_dict()['fc.2.bias']))
         value_d = []
         for l in range(PARENTS_COUNT):
             value_d.append(top_children[l][1])
