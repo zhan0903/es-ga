@@ -246,7 +246,7 @@ if __name__ == "__main__":
             next_parents.append(copy.deepcopy(top_children[i][0]))
         #logger.debug("Main process, len of next_parents:{0}, next_parents[0].state_dict:{1}".
         #             format(len(next_parents), next_parents[0].state_dict()))
-        logger.debug("Main process, len of next_parents:{1},next_parents[0]:{2}".
+        logger.debug("Main process, len of next_parents:{0},next_parents[0]:{1}".
                      format(len(next_parents), next_parents[0].state_dict()['fc.2.bias']))
         value_d = []
         for l in range(PARENTS_COUNT):
