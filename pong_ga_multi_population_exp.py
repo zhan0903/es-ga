@@ -180,7 +180,7 @@ if __name__ == "__main__":
     devices = []
 
     gpu_number = torch.cuda.device_count()
-    logger.debug("gpu number:{0}".format(torch.cuda.device_count()))
+    #logger.debug("gpu number:{0}".format(torch.cuda.device_count()))
     if gpu_number >= 1 and args.cuda:
         for i in range(gpu_number):
             devices.append("cuda:{0}".format(i))
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     for _ in range(PARENTS_COUNT):
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
-        share_parent = Net(env.observation_space.shape, env.action_space.n).cuda()#.cpu()
+        share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
         #share_parent.share_memory()
         share_parents.append(share_parent.state_dict())
 
