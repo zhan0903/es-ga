@@ -90,7 +90,7 @@ def evaluate(env, net, device="cpu"):
 
 
 def mutate_net(net, seed, noise_std, device):
-    new_net = copy.deepcopy(net)
+    new_net = copy.deepcopy(net).to(device)
     new_net.share_memory()
     np.random.seed(seed)
     for p in new_net.parameters():
