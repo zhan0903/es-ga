@@ -211,7 +211,7 @@ if __name__ == "__main__":
         input_queue.put((share_parents, pro))
 
     gen_idx = 0
-    logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parent[0]['fc.2.bias']))
+    logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
     while True:
         top_children = []
         speed = 0
