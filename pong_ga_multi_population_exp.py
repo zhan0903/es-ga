@@ -195,7 +195,7 @@ if __name__ == "__main__":
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n).cuda()#.cpu()
         #share_parent.share_memory()
-        share_parents.append(share_parent)#.state_dict())
+        share_parents.append(share_parent.state_dict())
 
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
         pickle.dump(share_parent, output_file, True)
