@@ -10,7 +10,7 @@ import time
 import numpy as np
 import argparse
 import logging
-import cPickle as pickle
+import pickle
 
 import torch
 import torch.nn as nn
