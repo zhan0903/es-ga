@@ -21,7 +21,7 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 # test
-PARENTS_COUNT = 10
+PARENTS_COUNT = 2
 WORKERS_COUNT = 10
 POPULATION_PER_WORKER = 20
 
@@ -248,7 +248,7 @@ if __name__ == "__main__":
             exit(0)
         next_parents = []
         logger.debug("len of top_children:{0}".format(len(top_children)))
-        assert len(top_children) == 24
+        # assert len(top_children) == 24
         for i in range(PARENTS_COUNT):
             next_parents.append(copy.deepcopy(top_children[i][0]))
         logger.debug("Main, next_parents[0]:{0}".format(next_parents[0]['fc.2.bias']))
