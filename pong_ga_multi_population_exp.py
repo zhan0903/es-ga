@@ -188,7 +188,7 @@ if __name__ == "__main__":
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)
         #share_parent.state_dict().share_memory_()
-        share_parents.append(share_parent)#.state_dict())
+        share_parents.append(share_parent.state_dict())
 
     value_d = []
     for l in range(PARENTS_COUNT):
