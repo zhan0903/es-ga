@@ -13,7 +13,7 @@ import logging
 
 import torch
 import torch.nn as nn
-import multiprocessing as mp
+import torch.multiprocessing as mp
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
@@ -187,8 +187,8 @@ if __name__ == "__main__":
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)
-        share_parent.share_memory()
-        share_parents.append(share_parent)
+        share_parent.share_memory_()
+        share_parents.append(share_parent.state_dict())
 
     value_d = []
     for l in range(PARENTS_COUNT):
