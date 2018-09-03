@@ -89,9 +89,11 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(net, seed, noise_std, device):
-    new_net = copy.deepcopy(net).to(device)
+def mutate_net(env_m, net, seed, noise_std, device):
+    #new_net = copy.deepcopy(load_state_dict(net)).to(device)
     #new_net.share_memory()
+    new_net = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
+    new_net.load_state_dict(net)
     np.random.seed(seed)
     for p in new_net.parameters():
         noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
@@ -134,14 +136,14 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
 
         noise_step = np.random.normal(scale=scale_step_w)
         logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(),
-                                                                        parents_w[0].state_dict()['fc.2.bias']))
+                                                                        parents_w[0]['fc.2.bias']))
         for _ in range(POPULATION_PER_WORKER):
             # solve pro do not sum to 1
             pro_list = np.array(pro_list)
             pro_list = pro_list/sum(pro_list)
             parent = np.random.choice(parent_list, p=pro_list)
             child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(parents_w[parent], child_seed, noise_step, device_w)
+            child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step, device_w)
             reward, steps = evaluate(new_env, child_net, device_w)
             batch_steps_w += steps
             child.append((child_net, reward))
