@@ -253,7 +253,7 @@ if __name__ == "__main__":
         for i in range(PARENTS_COUNT):
             new_net = Net(env.observation_space.shape, env.action_space.n)#.to(device)
             new_net.load_state_dict(top_children[i][0])
-            next_parents.append(new_net.cpu())
+            next_parents.append(new_net.cpu().state_dict())
             #next_parents.append(top_children[i][0].cpu())
         logger.debug("Main, next_parents[0]:{0}".format(next_parents[0]['fc.2.bias']))
         value_d = []
