@@ -187,7 +187,7 @@ if __name__ == "__main__":
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n).cuda()
-        #share_parent.share_memory()
+        share_parent.share_memory()
         share_parents.append(share_parent)#.state_dict())
 
     value_d = []
