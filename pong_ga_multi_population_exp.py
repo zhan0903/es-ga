@@ -129,16 +129,16 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         t_start = time.time()
         batch_steps_w = 0
         child = []
-        # get_item = input_queue_w.get()
+        pro_list = input_queue_w.get()
         # parents_w = get_item[0]
         # pro_list = get_item[1]
         assert len(parents_w) == PARENTS_COUNT
         assert len(pro_list) == PARENTS_COUNT
 
         with open(r"my_trainer_objects.pkl", "wb") as input_file:
-            get_item = pickle.load(input_file)
-        parents_w = get_item[0]
-        pro_list = get_item[1]
+            parents_w = pickle.load(input_file)
+        # parents_w = get_item[0]
+        # pro_list = get_item[1]
         noise_step = np.random.normal(scale=scale_step_w)
         logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(),
                                                                         parents_w[0]['fc.2.bias']))
@@ -256,6 +256,6 @@ if __name__ == "__main__":
         pro = F.softmax(torch.tensor(value_d), dim=0)
 
         for worker_queue in input_queues:
-            worker_queue.put((next_parents, pro))
+            worker_queue.put(pro)
         gen_idx += 1
 
