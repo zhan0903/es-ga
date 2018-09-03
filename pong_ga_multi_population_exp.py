@@ -20,11 +20,15 @@ from torch.utils.data import Dataset, DataLoader
 
 from tensorboardX import SummaryWriter
 
-# test
-PARENTS_COUNT = 10
-WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 100
+# # test-2 gpus
+# PARENTS_COUNT = 10
+# WORKERS_COUNT = 20
+# POPULATION_PER_WORKER = 100
 
+# test-8 gpus
+PARENTS_COUNT = 10
+WORKERS_COUNT = 24
+POPULATION_PER_WORKER = 200
 # # debug
 # PARENTS_COUNT = 3
 # WORKERS_COUNT = 8
