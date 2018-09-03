@@ -168,7 +168,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         top_children_w = []
         # out_item = (reward_max_p, speed_p)
         for k in range(PARENTS_COUNT):
-            top_children_w.append((child[k][0].cpu(), child[k][1]))
+            top_children_w.append((child[k][0], child[k][1]))
         logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2}".format(mp.current_process(),
                      top_children_w[0][0].state_dict()['fc.2.bias'], child[0][0].state_dict()['fc.2.bias']))
         logger.debug("current_process: {0},len of child:{1}, pro_list:{2},reward_max_p:{3}".
