@@ -20,19 +20,19 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 # test
-# PARENTS_COUNT = 20
-# WORKERS_COUNT = 32
-# POPULATION_PER_WORKER = 100
+PARENTS_COUNT = 10
+WORKERS_COUNT = 20
+POPULATION_PER_WORKER = 100
 
-# debug
-PARENTS_COUNT = 3
-WORKERS_COUNT = 8
-POPULATION_PER_WORKER = 50
+# # debug
+# PARENTS_COUNT = 3
+# WORKERS_COUNT = 8
+# POPULATION_PER_WORKER = 50
 
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -118,14 +118,6 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         device_w_id = int(device_w[-1])
         torch.cuda.set_device(device_w_id)
 
-    # # create PARENTS_COUNT's top_children
-    # top_children = []
-    # for _ in range(PARENTS_COUNT):
-    #     seed = np.random.randint(MAX_SEED)
-    #     child_net = build_net(new_env, seed).to(device_w)
-    #     child_net.share_memory()
-    #     top_children.append(child_net)
-
     for m in range(PARENTS_COUNT):
         parent_list.append(m)
 
@@ -192,6 +184,8 @@ if __name__ == "__main__":
 
     # create PARENTS_COUNT parents to share
     for _ in range(PARENTS_COUNT):
+        seed = np.random.randint(MAX_SEED)
+        torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)
         #share_parent.share_memory()
         share_parents.append(share_parent)
@@ -244,10 +238,7 @@ if __name__ == "__main__":
         assert len(top_children) == 24
         for i in range(PARENTS_COUNT):
             next_parents.append(copy.deepcopy(top_children[i][0]))
-        #logger.debug("Main process, len of next_parents:{0}, next_parents[0].state_dict:{1}".
-        #             format(len(next_parents), next_parents[0].state_dict()))
-        logger.debug("Main process, len of next_parents:{0},next_parents[0]:{1}".
-                     format(len(next_parents), next_parents[0].state_dict()['fc.2.bias']))
+        logger.debug("Main, next_parents[0]:{0}".format(next_parents[0].state_dict()['fc.2.bias']))
         value_d = []
         for l in range(PARENTS_COUNT):
             value_d.append(top_children[l][1])
