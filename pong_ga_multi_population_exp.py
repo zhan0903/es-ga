@@ -219,7 +219,7 @@ if __name__ == "__main__":
         top_children = []
         speed = 0
         # out_item = (reward_max_p, speed_p)
-        while len(top_children) < WORKERS_COUNT:
+        while len(top_children) < (WORKERS_COUNT*PARENTS_COUNT):
             out_item = output_queue.get()
             top_children.extend(out_item.top_children)
             speed += out_item.speed_p
