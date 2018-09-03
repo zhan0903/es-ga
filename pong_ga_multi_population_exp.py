@@ -162,7 +162,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         top_children_w = []
         # out_item = (reward_max_p, speed_p)
         for k in range(PARENTS_COUNT):
-            top_children_w.append((child[k][0].cpu().state_dict(), child[k][1]))
+            top_children_w.append((child[k][0].state_dict(), child[k][1])) # cpu()
         # reward_max_w = top_children_w[0][1]
         # if reward_max_w != -21:
         logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
