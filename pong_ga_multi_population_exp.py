@@ -257,6 +257,9 @@ if __name__ == "__main__":
             value_d.append(top_children[l][1])
         pro = F.softmax(torch.tensor(value_d), dim=0)
 
+        with open(r"my_trainer_objects.pkl", "wb") as output_file:
+            pickle.dump(next_parents, output_file, True)
+
         for worker_queue in input_queues:
             worker_queue.put(pro)
         gen_idx += 1
