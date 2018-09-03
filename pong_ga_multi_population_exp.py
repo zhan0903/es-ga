@@ -139,8 +139,8 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         # parents_w = get_item[0]
         # pro_list = get_item[1]
         noise_step = np.random.normal(scale=scale_step_w)
-        logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(),
-                                                                        parents_w[0]['fc.2.bias']))
+        logger.debug("Before, current_process: {0}, parents:{1},pro_list:{2}".format(mp.current_process(),
+                     parents_w[0]['fc.2.bias'], pro_list))
         assert len(parents_w) == PARENTS_COUNT
         assert len(pro_list) == PARENTS_COUNT
 
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         else:
             w = mp.Process(target=worker_func, args=(input_queue, output_queue, scale_step, "cpu"))
         w.start()
-        input_queue.put((share_parents, pro))
+        input_queue.put(pro)
 
     gen_idx = 0
     logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
