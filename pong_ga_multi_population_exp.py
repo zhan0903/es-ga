@@ -20,15 +20,15 @@ from torch.utils.data import Dataset, DataLoader
 
 from tensorboardX import SummaryWriter
 
-# # test-2 gpus
-# PARENTS_COUNT = 10
-# WORKERS_COUNT = 20
-# POPULATION_PER_WORKER = 100
-
-# test-8 gpus
+# test-2 gpus
 PARENTS_COUNT = 10
-WORKERS_COUNT = 24
-POPULATION_PER_WORKER = 200
+WORKERS_COUNT = 20
+POPULATION_PER_WORKER = 100
+
+# # test-8 gpus
+# PARENTS_COUNT = 10
+# WORKERS_COUNT = 24
+# POPULATION_PER_WORKER = 100
 # # debug
 # PARENTS_COUNT = 3
 # WORKERS_COUNT = 8
@@ -177,7 +177,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
-    writer = SummaryWriter(comment="-pong-ga-multi-population")
+    writer = SummaryWriter(comment="-pong-ga-multi-population-exp")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
@@ -197,8 +197,8 @@ if __name__ == "__main__":
 
     # create PARENTS_COUNT parents to share
     for _ in range(PARENTS_COUNT):
-        seed = np.random.randint(MAX_SEED)
-        torch.manual_seed(seed)
+        # seed = np.random.randint(MAX_SEED)
+        # torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
         #share_parent.share_memory()
         share_parents.append(share_parent.state_dict())
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     for j in range(WORKERS_COUNT):
         input_queue = mp.Queue(maxsize=1)
         input_queues.append(input_queue)
-        scale_step = (j+1)*0.001
+        scale_step = (j+1)*(1/WORKERS_COUNT)
         if gpu_number >= 1 and args.cuda:
             device_id = j % gpu_number
             logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
