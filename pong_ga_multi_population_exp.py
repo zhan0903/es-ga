@@ -136,13 +136,14 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         with open(r"my_trainer_objects.pkl", "rb") as input_file:
             parents_w = pickle.load(input_file)
 
-        assert len(parents_w) == PARENTS_COUNT
-        assert len(pro_list) == PARENTS_COUNT
         # parents_w = get_item[0]
         # pro_list = get_item[1]
         noise_step = np.random.normal(scale=scale_step_w)
         logger.debug("Before, current_process: {0}, parents:{1}".format(mp.current_process(),
                                                                         parents_w[0]['fc.2.bias']))
+        assert len(parents_w) == PARENTS_COUNT
+        assert len(pro_list) == PARENTS_COUNT
+
         for _ in range(POPULATION_PER_WORKER):
             # solve pro do not sum to 1
             pro_list = np.array(pro_list)
