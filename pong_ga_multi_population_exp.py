@@ -222,7 +222,7 @@ if __name__ == "__main__":
         value_d.append(1/PARENTS_COUNT)
     pro = F.softmax(torch.tensor(value_d), dim=0)
 
-    workers_number = mp.cpu_count()
+    workers_number = 10  # mp.cpu_count()
     p_input = []
     for u in range(workers_number):
         scale_step = (u + 1) * (0.5 / workers_number)
@@ -235,7 +235,7 @@ if __name__ == "__main__":
         p_input.append((pro, scale_step, device))
 
     gen_idx = 0
-    pool = mp.Pool(10)  # mp.cpu_count()
+    pool = mp.Pool(workers_number)  # mp.cpu_count()
     logger.debug("cpu_count():{0}".format(mp.cpu_count()))
     #while True:
     # p = mp.Pool(mp.cpu_count())
@@ -245,6 +245,7 @@ if __name__ == "__main__":
     pool.close()
     pool.join()
     logger.debug("in Main, len of result:{0}, result[0]:{1}".format(len(result), result[0]))
+    logger.debug("time spend:{0}".format((time.time()-time_start)/60))
     time.sleep(10)
     gen_idx += 1
     exit(0)
