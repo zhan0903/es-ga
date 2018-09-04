@@ -119,9 +119,14 @@ OutputItem = collections.namedtuple('OutputItem', field_names=['top_children', '
 #     return net_new
 
 
-def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
+def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     new_env = make_env()
     parent_list = []
+    pro_list = input_w[0]
+    scale_step_w = input_w[1]
+    device_w = input_w[2]
+
+
     # this is necessary
     if device_w != "cpu":
         device_w_id = int(device_w[-1])
@@ -130,50 +135,55 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
     for m in range(PARENTS_COUNT):
         parent_list.append(m)
 
-    elite = []
-    while True:
-        t_start = time.time()
-        batch_steps_w = 0
-        child = []
-        pro_list = input_queue_w.get()
+    elite = None
+    #while True:
+    t_start = time.time()
+    batch_steps_w = 0
+    child = []
+    #pro_list = pro # input_queue_w.get()
 
-        with open(r"my_trainer_objects.pkl", "rb") as input_file:
-            parents_w = pickle.load(input_file)
+    with open(r"my_trainer_objects.pkl", "rb") as input_file:
+        parents_w = pickle.load(input_file)
 
-        noise_step = np.random.normal(scale=scale_step_w)
-        logger.debug("Before, current_process: {0}, parents:{1},pro_list:{2}".format(mp.current_process(),
-                     parents_w[0]['fc.2.bias'], pro_list))
-        assert len(parents_w) == PARENTS_COUNT
-        assert len(pro_list) == PARENTS_COUNT
+    noise_step = np.random.normal(scale=scale_step_w)
+    logger.debug("Before, current_process: {0}, parents:{1},pro_list:{2}".format(mp.current_process(),
+                 parents_w[0]['fc.2.bias'], pro_list))
+    assert len(parents_w) == PARENTS_COUNT
+    assert len(pro_list) == PARENTS_COUNT
 
-        for _ in range(POPULATION_PER_WORKER):
-            # solve pro do not sum to 1
-            pro_list = np.array(pro_list)
-            pro_list = pro_list/sum(pro_list)
-            parent = np.random.choice(parent_list, p=pro_list)
-            child_seed = np.random.randint(MAX_SEED)
-            child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step, device_w)
-            reward, steps = evaluate(new_env, child_net, device_w)
-            batch_steps_w += steps
-            child.append((child_net, reward))
-        if elite:
-            child.extend(elite)
-            elite = []
-        child.sort(key=lambda p: p[1], reverse=True)
-        for k in range(ELITE_NUMBER):
-            elite.append(copy.deepcopy(child[k]))
-        # elite = copy.deepcopy(child[0])
-        speed_p = batch_steps_w / (time.time() - t_start)
-        top_children_w = []
-        # out_item = (reward_max_p, speed_p)
-        for k in range(PARENTS_COUNT):
-            top_children_w.append((child[k][0].state_dict(), child[k][1])) # cpu()
-        # reward_max_w = top_children_w[0][1]
-        # if reward_max_w != -21:
-        logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
-                     format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
-                            child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
-        output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
+    for _ in range(POPULATION_PER_WORKER):
+        # solve pro do not sum to 1
+        pro_list = np.array(pro_list)
+        pro_list = pro_list/sum(pro_list)
+        parent = np.random.choice(parent_list, p=pro_list)
+        child_seed = np.random.randint(MAX_SEED)
+        child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step, device_w)
+        reward, steps = evaluate(new_env, child_net, device_w)
+        batch_steps_w += steps
+        child.append((child_net, reward))
+    # if elite:
+    #     child.extend(elite)
+    #     elite = []
+    if elite is not None:
+        child.append(elite)
+    child.sort(key=lambda p: p[1], reverse=True)
+    # for k in range(ELITE_NUMBER):
+    #     elite.append(copy.deepcopy(child[k]))
+    elite = copy.deepcopy(child[0])
+    speed_p = batch_steps_w / (time.time() - t_start)
+    top_children_w = []
+    # out_item = (reward_max_p, speed_p)
+    for k in range(PARENTS_COUNT):
+        top_children_w.append((child[k][0], child[k][1])) # cpu()
+    # reward_max_w = top_children_w[0][1]
+    # if reward_max_w != -21:
+    # return OutputItem(top_children_w, speed_p=speed_p)
+    # logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
+    #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
+    #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
+
+    return OutputItem(top_children_w, speed_p=speed_p)
+        #output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
 if __name__ == "__main__":
@@ -212,18 +222,45 @@ if __name__ == "__main__":
         value_d.append(1/PARENTS_COUNT)
     pro = F.softmax(torch.tensor(value_d), dim=0)
 
-    for j in range(WORKERS_COUNT):
+    workers_number = mp.cpu_count()
+    p_input = []
+    for u in range(workers_number):
+        scale_step = (u + 1) * (0.5 / workers_number)
         input_queue = mp.SimpleQueue()
-        input_queues.append(input_queue)
-        scale_step = (j+1)*(1/WORKERS_COUNT)
-        if gpu_number >= 1 and args.cuda:
-            device_id = j % gpu_number
-            logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
-            w = mp.Process(target=worker_func, args=(input_queue, output_queue, scale_step, devices[device_id]))
+        if gpu_number == 0:
+            device = "cpu"
         else:
-            w = mp.Process(target=worker_func, args=(input_queue, output_queue, scale_step, "cpu"))
-        w.start()
-        input_queue.put(pro)
+            device_id = u % gpu_number
+            device = devices[device_id]
+        p_input.append((pro, scale_step, device))
+
+    gen_idx = 0
+    pool = mp.Pool(mp.cpu_count())
+    logger.debug("cpu_count():{0}".format(mp.cpu_count()))
+    #while True:
+    # p = mp.Pool(mp.cpu_count())
+    # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
+    result = pool.map(worker_func, p_input)
+    #logger.debug("in Main, len of result:{0}, result[0]:{1}".format(len(result), result[0]))
+    pool.close()
+    pool.join()
+    logger.debug("in Main, len of result:{0}, result[0]:{1}".format(len(result), result[0]))
+    time.sleep(10)
+    gen_idx += 1
+    exit(0)
+
+    # for j in range(WORKERS_COUNT):
+    #     input_queue = mp.SimpleQueue()
+    #     input_queues.append(input_queue)
+    #     scale_step = (j+1)*(1/WORKERS_COUNT)
+    #     if gpu_number >= 1 and args.cuda:
+    #         device_id = j % gpu_number
+    #         logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
+    #         w = mp.Process(target=worker_func, args=(input_queue, output_queue, scale_step, devices[device_id]))
+    #     else:
+    #         w = mp.Process(target=worker_func, args=(input_queue, output_queue, scale_step, "cpu"))
+    #     w.start()
+    #     input_queue.put(pro)
 
     gen_idx = 0
     logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
