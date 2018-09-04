@@ -226,7 +226,7 @@ if __name__ == "__main__":
     p_input = []
     for u in range(workers_number):
         scale_step = (u + 1) * (0.5 / workers_number)
-        input_queue = mp.SimpleQueue()
+        #input_queue = mp.SimpleQueue()
         if gpu_number == 0:
             device = "cpu"
         else:
