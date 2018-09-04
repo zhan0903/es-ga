@@ -182,7 +182,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
     #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
 
-    return OutputItem(top_children_w, speed_p=speed_p)
+    return OutputItem(top_children=top_children_w, speed_p=speed_p)
         #output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
@@ -224,57 +224,30 @@ if __name__ == "__main__":
 
     workers_number = 10  # mp.cpu_count()
     p_input = []
-    for u in range(workers_number):
-        scale_step = (u + 1) * (0.5 / workers_number)
-        #input_queue = mp.SimpleQueue()
-        if gpu_number == 0:
-            device = "cpu"
-        else:
-            device_id = u % gpu_number
-            device = devices[device_id]
-        p_input.append((pro, scale_step, device))
-
+    init_scale = 1
+    speed = 0
     gen_idx = 0
-    pool = mp.Pool(workers_number)  # mp.cpu_count()
-    logger.debug("cpu_count():{0}".format(mp.cpu_count()))
-    #while True:
-    # p = mp.Pool(mp.cpu_count())
-    # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
-    # result = [(parent_net.state_dict(), reward, speed),...]
-    # p_input = [(parent_net.state_dict(), pro, scale_step, device)]
-    result = pool.map(worker_func, p_input)
-    #logger.debug("in Main, len of result:{0}, result[0]:{1}".format(len(result), result[0]))
-    pool.close()
-    pool.join()
-    logger.debug("in Main, len of result:{0}, result[0]:{1}".format(len(result), result[0]))
-    logger.debug("time spend:{0}".format((time.time()-time_start)/60))
-    time.sleep(10)
-    gen_idx += 1
-    exit(0)
+    reward_max_last = None
 
-    # for j in range(WORKERS_COUNT):
-    #     input_queue = mp.SimpleQueue()
-    #     input_queues.append(input_queue)
-    #     scale_step = (j+1)*(1/WORKERS_COUNT)
-    #     if gpu_number >= 1 and args.cuda:
-    #         device_id = j % gpu_number
-    #         logger.debug("device_id:{0}, worker id:{1}".format(device_id, j))
-    #         w = mp.Process(target=worker_func, args=(input_queue, output_queue, scale_step, devices[device_id]))
-    #     else:
-    #         w = mp.Process(target=worker_func, args=(input_queue, output_queue, scale_step, "cpu"))
-    #     w.start()
-    #     input_queue.put(pro)
-
-    gen_idx = 0
-    logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
     while True:
+        for u in range(workers_number):
+            scale_step = (u + 1) * (init_scale / workers_number)
+            if gpu_number == 0:
+                device = "cpu"
+            else:
+                device_id = u % gpu_number
+                device = devices[device_id]
+            p_input.append((pro, scale_step, device))
+
+        pool = mp.Pool(workers_number)  # mp.cpu_count()
+        logger.debug("cpu_count():{0}".format(mp.cpu_count()))
+        result = pool.map(worker_func, p_input)
+        pool.close()
+        pool.join()
         top_children = []
-        speed = 0
-        # out_item = (reward_max_p, speed_p)
-        while len(top_children) < (WORKERS_COUNT*PARENTS_COUNT):
-            out_item = output_queue.get()
-            top_children.extend(out_item.top_children)
-            speed += out_item.speed_p
+        for item in result:
+            top_children.extend(item.top_children)
+            speed += item.speed_p
 
         top_children.sort(key=lambda p: p[1], reverse=True)
         top_rewards = [p[1] for p in top_children[:PARENTS_COUNT]]
@@ -289,17 +262,15 @@ if __name__ == "__main__":
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
             gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
 
-        if reward_mean == 21:
-            exit(0)
         next_parents = []
-        #top_children[i][0]
+        # top_children[i][0]
         logger.debug("len of top_children:{0}".format(len(top_children)))
         # assert len(top_children) == 24
         for i in range(PARENTS_COUNT):
-            new_net = Net(env.observation_space.shape, env.action_space.n)#.to(device)
+            new_net = Net(env.observation_space.shape, env.action_space.n)  # .to(device)
             new_net.load_state_dict(top_children[i][0])
             next_parents.append(new_net.cpu().state_dict())
-            #next_parents.append(top_children[i][0].cpu())
+            # next_parents.append(top_children[i][0].cpu())
         logger.debug("Main, next_parents[0]:{0}".format(next_parents[0]['fc.2.bias']))
         value_d = []
         for l in range(PARENTS_COUNT):
@@ -309,8 +280,57 @@ if __name__ == "__main__":
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
 
-        for worker_queue in input_queues:
-            worker_queue.put(pro)
+        if reward_max == reward_max_last:
+            init_scale = init_scale / 2
+        reward_max_last = reward_max
         gen_idx += 1
+
+    # gen_idx = 0
+    # logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
+    # while True:
+    #     top_children = []
+    #     speed = 0
+    #     # out_item = (reward_max_p, speed_p)
+    #     while len(top_children) < (WORKERS_COUNT*PARENTS_COUNT):
+    #         out_item = output_queue.get()
+    #         top_children.extend(out_item.top_children)
+    #         speed += out_item.speed_p
+    #
+    #     top_children.sort(key=lambda p: p[1], reverse=True)
+    #     top_rewards = [p[1] for p in top_children[:PARENTS_COUNT]]
+    #     reward_mean = np.mean(top_rewards)
+    #     reward_max = np.max(top_rewards)
+    #     reward_std = np.std(top_rewards)
+    #     writer.add_scalar("reward_mean", reward_mean, gen_idx)
+    #     writer.add_scalar("reward_std", reward_std, gen_idx)
+    #     writer.add_scalar("reward_max", reward_max, gen_idx)
+    #     writer.add_scalar("speed", speed, gen_idx)
+    #     total_time = (time.time() - time_start) / 60
+    #     print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
+    #         gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
+    #
+    #     if reward_mean == 21:
+    #         exit(0)
+    #     next_parents = []
+    #     #top_children[i][0]
+    #     logger.debug("len of top_children:{0}".format(len(top_children)))
+    #     # assert len(top_children) == 24
+    #     for i in range(PARENTS_COUNT):
+    #         new_net = Net(env.observation_space.shape, env.action_space.n)#.to(device)
+    #         new_net.load_state_dict(top_children[i][0])
+    #         next_parents.append(new_net.cpu().state_dict())
+    #         #next_parents.append(top_children[i][0].cpu())
+    #     logger.debug("Main, next_parents[0]:{0}".format(next_parents[0]['fc.2.bias']))
+    #     value_d = []
+    #     for l in range(PARENTS_COUNT):
+    #         value_d.append(top_children[l][1])
+    #     pro = F.softmax(torch.tensor(value_d), dim=0)
+    #
+    #     with open(r"my_trainer_objects.pkl", "wb") as output_file:
+    #         pickle.dump(next_parents, output_file, True)
+    #
+    #     for worker_queue in input_queues:
+    #         worker_queue.put(pro)
+    #     gen_idx += 1
 
         # test pool-version branch
