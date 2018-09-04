@@ -160,7 +160,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
             elite = []
         child.sort(key=lambda p: p[1], reverse=True)
         for k in range(ELITE_NUMBER):
-            elite.append(copy.deepcopy(child[i]))
+            elite.append(copy.deepcopy(child[k]))
         # elite = copy.deepcopy(child[0])
         speed_p = batch_steps_w / (time.time() - t_start)
         top_children_w = []
