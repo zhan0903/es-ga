@@ -20,25 +20,26 @@ from torch.utils.data import Dataset, DataLoader
 
 from tensorboardX import SummaryWriter
 
-# test-2 gpus
-PARENTS_COUNT = 10
-WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 100
-ELITE_NUMBER = 3
+# # test-2 gpus
+# PARENTS_COUNT = 10
+# WORKERS_COUNT = 20
+# POPULATION_PER_WORKER = 100
+# ELITE_NUMBER = 1
 
 # # test-8 gpus
 # PARENTS_COUNT = 10
 # WORKERS_COUNT = 24
 # POPULATION_PER_WORKER = 100
-# # debug
-# PARENTS_COUNT = 3
-# WORKERS_COUNT = 8
-# POPULATION_PER_WORKER = 50
+# debug
+PARENTS_COUNT = 2
+WORKERS_COUNT = 2
+POPULATION_PER_WORKER = 10
+ELITE_NUMBER = 1
 
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -271,3 +272,5 @@ if __name__ == "__main__":
         for worker_queue in input_queues:
             worker_queue.put(pro)
         gen_idx += 1
+
+        # test
