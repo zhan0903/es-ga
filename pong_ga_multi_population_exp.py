@@ -172,7 +172,7 @@ def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
         # if reward_max_w != -21:
         logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
                      format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
-                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
+                            child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
         output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
