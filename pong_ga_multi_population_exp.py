@@ -14,7 +14,7 @@ import pickle
 
 import torch
 import torch.nn as nn
-import multiprocessing as mp
+import torch.multiprocessing as mp
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
