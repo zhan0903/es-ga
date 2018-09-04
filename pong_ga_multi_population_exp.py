@@ -127,7 +127,6 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     scale_step_w = input_w[1]
     device_w = input_w[2]
 
-
     # this is necessary
     if device_w != "cpu":
         device_w_id = int(device_w[-1])
@@ -236,7 +235,7 @@ if __name__ == "__main__":
         p_input.append((pro, scale_step, device))
 
     gen_idx = 0
-    pool = mp.Pool(mp.cpu_count())
+    pool = mp.Pool(10)  # mp.cpu_count()
     logger.debug("cpu_count():{0}".format(mp.cpu_count()))
     #while True:
     # p = mp.Pool(mp.cpu_count())
