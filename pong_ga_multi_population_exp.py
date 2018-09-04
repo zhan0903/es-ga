@@ -14,7 +14,7 @@ import pickle
 
 import torch
 import torch.nn as nn
-import torch.multiprocessing as mp
+import multiprocessing as mp
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
@@ -190,7 +190,7 @@ if __name__ == "__main__":
             devices.append("cuda:{0}".format(i))
 
     env = make_env()
-    output_queue = mp.queues.SimpleQueue(maxsize=WORKERS_COUNT)
+    output_queue = mp.SimpleQueue(maxsize=WORKERS_COUNT)
     time_start = time.time()
     share_parents = []
     input_queues = []
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     pro = F.softmax(torch.tensor(value_d), dim=0)
 
     for j in range(WORKERS_COUNT):
-        input_queue = mp.queues.SimpleQueue(maxsize=1)
+        input_queue = mp.SimpleQueue(maxsize=1)
         input_queues.append(input_queue)
         scale_step = (j+1)*(1/WORKERS_COUNT)
         if gpu_number >= 1 and args.cuda:
