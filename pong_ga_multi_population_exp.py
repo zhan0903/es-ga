@@ -40,7 +40,7 @@ POPULATION_PER_WORKER = 100
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -240,6 +240,8 @@ if __name__ == "__main__":
     #while True:
     # p = mp.Pool(mp.cpu_count())
     # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
+    # result = [(parent_net.state_dict(), reward, speed),...]
+    # p_input = [(parent_net.state_dict(), pro, scale_step, device)]
     result = pool.map(worker_func, p_input)
     #logger.debug("in Main, len of result:{0}, result[0]:{1}".format(len(result), result[0]))
     pool.close()
