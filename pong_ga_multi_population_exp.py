@@ -17,6 +17,7 @@ import torch.nn as nn
 import multiprocessing as mp
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
+import multiprocessing.queues.SimpleQueue as SimpleQuene
 
 from tensorboardX import SummaryWriter
 
@@ -79,15 +80,15 @@ def make_env():
     return ptan.common.wrappers.wrap_dqn(gym.make("PongNoFrameskip-v4"))
 
 
-def evaluate(env, net, device="cpu"):
-    obs = env.reset()
+def evaluate(env_e, net, device="cpu"):
+    obs = env_e.reset()
     reward = 0.0
     steps = 0
     while True:
         obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
         act_prob = net(obs_v).to(device)
         acts = act_prob.max(dim=1)[1]
-        obs, r, done, _ = env.step(acts.data.cpu().numpy()[0])
+        obs, r, done, _ = env_e.step(acts.data.cpu().numpy()[0])
         reward += r
         steps += 1
         if done:
@@ -95,27 +96,27 @@ def evaluate(env, net, device="cpu"):
     return reward, steps
 
 
-def mutate_net(env_m, net, seed, noise_std, device):
+def mutate_net(env_m, p_net, seed, noise_std, device):
     #new_net = copy.deepcopy(load_state_dict(net)).to(device)
     #new_net.share_memory()
-    new_net = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
-    new_net.load_state_dict(net)
+    new_net_m = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
+    new_net_m.load_state_dict(p_net)
     np.random.seed(seed)
-    for p in new_net.parameters():
+    for p in new_net_m.parameters():
         noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
         p.data += noise_std * noise_t
-    return new_net
+    return new_net_m
 
 
 # out_item = (reward_max_p, speed_p)
 OutputItem = collections.namedtuple('OutputItem', field_names=['top_children', 'speed_p'])
 
 
-def build_net(env_b, seeds, device="cpu"):
-    torch.manual_seed(seeds)
-    net_new = Net(env_b.observation_space.shape, env_b.action_space.n)
-    net_new.to(device)
-    return net_new
+# def build_net(env_b, seeds, device="cpu"):
+#     torch.manual_seed(seeds)
+#     net_new = Net(env_b.observation_space.shape, env_b.action_space.n)
+#     net_new.to(device)
+#     return net_new
 
 
 def worker_func(input_queue_w, output_queue_w, scale_step_w, device_w="cpu"):
@@ -190,7 +191,7 @@ if __name__ == "__main__":
             devices.append("cuda:{0}".format(i))
 
     env = make_env()
-    output_queue = mp.Queue(maxsize=WORKERS_COUNT)
+    output_queue = SimpleQuene(maxsize=WORKERS_COUNT)
     time_start = time.time()
     share_parents = []
     input_queues = []
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     pro = F.softmax(torch.tensor(value_d), dim=0)
 
     for j in range(WORKERS_COUNT):
-        input_queue = mp.Queue(maxsize=1)
+        input_queue = SimpleQuene(maxsize=1)
         input_queues.append(input_queue)
         scale_step = (j+1)*(1/WORKERS_COUNT)
         if gpu_number >= 1 and args.cuda:
@@ -251,7 +252,7 @@ if __name__ == "__main__":
         if reward_mean == 21:
             exit(0)
         next_parents = []
-        top_children[i][0]
+        #top_children[i][0]
         logger.debug("len of top_children:{0}".format(len(top_children)))
         # assert len(top_children) == 24
         for i in range(PARENTS_COUNT):
