@@ -79,13 +79,10 @@ def mutate_parent(net):
 
 if __name__ == "__main__":
     writer = SummaryWriter(comment="-cartpole-ga")
-    env = gym.make("PongNoFrameskip-v4")#("CartPole-v0")#("PongNoFrameskip-v4")#("CartPole-v0")
+    env = gym.make("CartPole-v0")#("PongNoFrameskip-v4")#("CartPole-v0")
 
     gen_idx = 0
-    nets = [
-        Net(env.observation_space.shape[0], env.action_space.n) #210,160,3 6 ；4 2
-        for _ in range(POPULATION_SIZE)
-    ]
+    nets = [Net(env.observation_space.shape[0], env.action_space.n)for _ in range(POPULATION_SIZE)]
     population = [
         (net, evaluate(env, net))
         for net in nets

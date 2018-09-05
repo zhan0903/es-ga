@@ -23,7 +23,7 @@ from tensorboardX import SummaryWriter
 # test-2 gpus
 PARENTS_COUNT = 10
 # WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 60
+POPULATION_PER_WORKER = 100
 
 
 # # test-8 gpus
@@ -205,8 +205,8 @@ if __name__ == "__main__":
 
     # create PARENTS_COUNT parents to share
     for _ in range(PARENTS_COUNT):
-        # seed = np.random.randint(MAX_SEED)
-        # torch.manual_seed(seed)
+        seed = np.random.randint(MAX_SEED)
+        torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
         #share_parent.share_memory()
         share_parents.append(share_parent.state_dict())
@@ -214,6 +214,7 @@ if __name__ == "__main__":
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
         pickle.dump(share_parents, output_file, True)
 
+    #logger.debug("parent[0]['fc.2.bias']:{}".format(share_parents[0]))
     value_d = []
     for l in range(PARENTS_COUNT):
         value_d.append(1/PARENTS_COUNT)
@@ -240,7 +241,7 @@ if __name__ == "__main__":
             p_input.append((pro, scale_step, device, env))
 
         pool = mp.Pool(workers_number)  # mp.cpu_count()
-        #logger.debug("cpu_count():{0}".format(mp.cpu_count()))
+        # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
         result = pool.map(worker_func, p_input)
         pool.close()
         pool.join()
@@ -251,6 +252,7 @@ if __name__ == "__main__":
             top_children.extend(item.top_children)
             speed += item.speed_p
 
+        logger.debug("elite:{}".format(elite[0]['fc.2.bias']))
         if elite is not None:
             top_children.append(elite)
 
@@ -277,12 +279,13 @@ if __name__ == "__main__":
             new_net.load_state_dict(top_children[i][0])
             next_parents.append(new_net.cpu().state_dict())
             # next_parents.append(top_children[i][0].cpu())
-        logger.debug("Main, next_parents[0]:{0}, init_scale:{1}".format(next_parents[0]['fc.2.bias'], init_scale))
-        value_d = []
-        for l in range(PARENTS_COUNT):
-            value_d.append(top_children[l][1])
-        pro = F.softmax(torch.tensor(value_d), dim=0)
+        # value_d = []
+        # for l in range(PARENTS_COUNT):
+        #     value_d.append(top_children[l][1])
+        # pro = F.softmax(torch.tensor(value_d), dim=0)
         # elite = copy.deepcopy(top_children[0])
+        logger.debug("Main, next_parents[0]:{0}, init_scale:{1}, pro_list:{2}".format(next_parents[0]['fc.2.bias'],
+                                                                                      init_scale, pro))
 
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
