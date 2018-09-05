@@ -23,7 +23,7 @@ from tensorboardX import SummaryWriter
 # test-2 gpus
 PARENTS_COUNT = 10
 # WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 60
+POPULATION_PER_WORKER = 70
 
 
 # # test-8 gpus
