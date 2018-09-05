@@ -121,11 +121,12 @@ OutputItem = collections.namedtuple('OutputItem', field_names=['top_children', '
 
 
 def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
-    new_env = make_env()
+    t_start = time.time()
     parent_list = []
     pro_list = input_w[0]
     scale_step_w = input_w[1]
     device_w = input_w[2]
+    env_w = input_w[3]
 
     # this is necessary
     if device_w != "cpu":
@@ -136,12 +137,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
         parent_list.append(m)
 
     elite = None
-    #while True:
-    t_start = time.time()
     batch_steps_w = 0
     child = []
-    #pro_list = pro # input_queue_w.get()
-
     with open(r"my_trainer_objects.pkl", "rb") as input_file:
         parents_w = pickle.load(input_file)
 
@@ -157,8 +154,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
         pro_list = pro_list/sum(pro_list)
         parent = np.random.choice(parent_list, p=pro_list)
         child_seed = np.random.randint(MAX_SEED)
-        child_net = mutate_net(new_env, parents_w[parent], child_seed, noise_step, device_w)
-        reward, steps = evaluate(new_env, child_net, device_w)
+        child_net = mutate_net(env_w, parents_w[parent], child_seed, noise_step, device_w)
+        reward, steps = evaluate(env_w, child_net, device_w)
         batch_steps_w += steps
         child.append((child_net, reward))
     # if elite:
@@ -237,7 +234,7 @@ if __name__ == "__main__":
             else:
                 device_id = u % gpu_number
                 device = devices[device_id]
-            p_input.append((pro, scale_step, device))
+            p_input.append((pro, scale_step, device, env))
 
         pool = mp.Pool(workers_number)  # mp.cpu_count()
         logger.debug("cpu_count():{0}".format(mp.cpu_count()))
@@ -284,6 +281,7 @@ if __name__ == "__main__":
             init_scale = init_scale / 2
         reward_max_last = reward_max
         gen_idx += 1
+        speed = 0
 
     # gen_idx = 0
     # logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
