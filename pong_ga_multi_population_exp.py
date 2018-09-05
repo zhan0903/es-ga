@@ -143,8 +143,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
         parents_w = pickle.load(input_file)
 
     noise_step = np.random.normal(scale=scale_step_w)
-    logger.debug("Before, current_process: {0}, parents:{1},pro_list:{2}".format(mp.current_process(),
-                 parents_w[0]['fc.2.bias'], pro_list))
+    #logger.debug("Before, current_process: {0}, parents:{1},pro_list:{2}".format(mp.current_process(),
+    #             parents_w[0]['fc.2.bias'], pro_list))
     assert len(parents_w) == PARENTS_COUNT
     assert len(pro_list) == PARENTS_COUNT
 
@@ -225,6 +225,8 @@ if __name__ == "__main__":
     speed = 0
     gen_idx = 0
     reward_max_last = None
+    elite = None
+    pool = mp.Pool(workers_number)
 
     while True:
         for u in range(workers_number):
@@ -236,7 +238,7 @@ if __name__ == "__main__":
                 device = devices[device_id]
             p_input.append((pro, scale_step, device, env))
 
-        pool = mp.Pool(workers_number)  # mp.cpu_count()
+        # pool = mp.Pool(workers_number)  # mp.cpu_count()
         logger.debug("cpu_count():{0}".format(mp.cpu_count()))
         result = pool.map(worker_func, p_input)
         pool.close()
@@ -246,7 +248,11 @@ if __name__ == "__main__":
             top_children.extend(item.top_children)
             speed += item.speed_p
 
+        if elite is not None:
+            top_children.append(elite)
+
         top_children.sort(key=lambda p: p[1], reverse=True)
+        elite = copy.deepcopy(top_children[0])
         top_rewards = [p[1] for p in top_children[:PARENTS_COUNT]]
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
@@ -273,6 +279,7 @@ if __name__ == "__main__":
         for l in range(PARENTS_COUNT):
             value_d.append(top_children[l][1])
         pro = F.softmax(torch.tensor(value_d), dim=0)
+        # elite = copy.deepcopy(top_children[0])
 
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
