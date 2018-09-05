@@ -22,7 +22,7 @@ from tensorboardX import SummaryWriter
 
 # test-2 gpus
 PARENTS_COUNT = 10
-WORKERS_COUNT = 20
+# WORKERS_COUNT = 20
 POPULATION_PER_WORKER = 20
 
 
@@ -219,7 +219,7 @@ if __name__ == "__main__":
         value_d.append(1/PARENTS_COUNT)
     pro = F.softmax(torch.tensor(value_d), dim=0)
 
-    workers_number = 10  # mp.cpu_count()
+    workers_number = mp.cpu_count()  # 10
     #p_input = []
     init_scale = 1
     speed = 0
@@ -239,11 +239,11 @@ if __name__ == "__main__":
             p_input.append((pro, scale_step, device, env))
 
         pool = mp.Pool(workers_number)  # mp.cpu_count()
-        logger.debug("cpu_count():{0}".format(mp.cpu_count()))
+        #logger.debug("cpu_count():{0}".format(mp.cpu_count()))
         result = pool.map(worker_func, p_input)
         pool.close()
         pool.join()
-        logger.debug("len of result:{0}".format(len(result)))
+        # logger.debug("len of result:{0}".format(len(result)))
 
         top_children = []
         for item in result:
@@ -269,14 +269,14 @@ if __name__ == "__main__":
 
         next_parents = []
         # top_children[i][0]
-        logger.debug("len of top_children:{0}".format(len(top_children)))
+        # logger.debug("len of top_children:{0}".format(len(top_children)))
         # assert len(top_children) == 24
         for i in range(PARENTS_COUNT):
             new_net = Net(env.observation_space.shape, env.action_space.n)  # .to(device)
             new_net.load_state_dict(top_children[i][0])
             next_parents.append(new_net.cpu().state_dict())
             # next_parents.append(top_children[i][0].cpu())
-        logger.debug("Main, next_parents[0]:{0}".format(next_parents[0]['fc.2.bias']))
+        logger.debug("Main, next_parents[0]:{0}, init_scale:{1}".format(next_parents[0]['fc.2.bias'], init_scale))
         value_d = []
         for l in range(PARENTS_COUNT):
             value_d.append(top_children[l][1])
@@ -287,7 +287,11 @@ if __name__ == "__main__":
             pickle.dump(next_parents, output_file, True)
 
         if reward_max == reward_max_last:
-            init_scale = init_scale / 2
+            if init_scale <= 0.1:
+                init_scale = 0.1
+            else:
+                init_scale = init_scale / 2
+
         reward_max_last = reward_max
         gen_idx += 1
         speed = 0
