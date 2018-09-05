@@ -127,7 +127,6 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     scale_step_w = input_w[1]
     device_w = input_w[2]
     env_w = input_w[3]
-    parents_w = input_w[4]
 
     # this is necessary
     if device_w != "cpu":
@@ -140,8 +139,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # elite = None
     batch_steps_w = 0
     child = []
-    # with open(r"my_trainer_objects.pkl", "rb") as input_file:
-    #     parents_w = pickle.load(input_file)
+    with open(r"my_trainer_objects.pkl", "rb") as input_file:
+        parents_w = pickle.load(input_file)
 
     noise_step = np.random.normal(scale=scale_step_w)
     #logger.debug("Before, current_process: {0}, parents:{1},pro_list:{2}".format(mp.current_process(),
@@ -212,7 +211,6 @@ if __name__ == "__main__":
         #share_parent.share_memory()
         share_parents.append(share_parent.state_dict())
 
-    parents = share_parents
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
         pickle.dump(share_parents, output_file, True)
 
@@ -222,15 +220,15 @@ if __name__ == "__main__":
     pro = F.softmax(torch.tensor(value_d), dim=0)
 
     workers_number = 10  # mp.cpu_count()
-    p_input = []
+    #p_input = []
     init_scale = 1
     speed = 0
     gen_idx = 0
     reward_max_last = None
     elite = None
-    #pool = mp.Pool(workers_number)
 
     while True:
+        p_input = []
         for u in range(workers_number):
             scale_step = (u + 1) * (init_scale / workers_number)
             if gpu_number == 0:
@@ -238,13 +236,15 @@ if __name__ == "__main__":
             else:
                 device_id = u % gpu_number
                 device = devices[device_id]
-            p_input.append((pro, scale_step, device, env, parents))
+            p_input.append((pro, scale_step, device, env))
 
         pool = mp.Pool(workers_number)  # mp.cpu_count()
         logger.debug("cpu_count():{0}".format(mp.cpu_count()))
         result = pool.map(worker_func, p_input)
         pool.close()
         pool.join()
+        logger.debug("len of result:{0}".format(len(result)))
+
         top_children = []
         for item in result:
             top_children.extend(item.top_children)
@@ -282,10 +282,9 @@ if __name__ == "__main__":
             value_d.append(top_children[l][1])
         pro = F.softmax(torch.tensor(value_d), dim=0)
         # elite = copy.deepcopy(top_children[0])
-        parents = next_parents
 
-        # with open(r"my_trainer_objects.pkl", "wb") as output_file:
-        #     pickle.dump(next_parents, output_file, True)
+        with open(r"my_trainer_objects.pkl", "wb") as output_file:
+            pickle.dump(next_parents, output_file, True)
 
         if reward_max == reward_max_last:
             init_scale = init_scale / 2
