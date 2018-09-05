@@ -40,7 +40,7 @@ POPULATION_PER_WORKER = 20
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -136,7 +136,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     for m in range(PARENTS_COUNT):
         parent_list.append(m)
 
-    elite = None
+    # elite = None
     batch_steps_w = 0
     child = []
     with open(r"my_trainer_objects.pkl", "rb") as input_file:
@@ -161,12 +161,12 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # if elite:
     #     child.extend(elite)
     #     elite = []
-    if elite is not None:
-        child.append(elite)
+    # if elite is not None:
+    #     child.append(elite)
     child.sort(key=lambda p: p[1], reverse=True)
     # for k in range(ELITE_NUMBER):
     #     elite.append(copy.deepcopy(child[k]))
-    elite = copy.deepcopy(child[0])
+    # elite = copy.deepcopy(child[0])
     speed_p = batch_steps_w / (time.time() - t_start)
     top_children_w = []
     # out_item = (reward_max_p, speed_p)
