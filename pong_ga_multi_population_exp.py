@@ -252,9 +252,9 @@ if __name__ == "__main__":
             top_children.extend(item.top_children)
             speed += item.speed_p
 
-        logger.debug("elite:{}".format(elite[0]['fc.2.bias']))
         if elite is not None:
             top_children.append(elite)
+            logger.debug("elite:{}".format(elite[0]['fc.2.bias']))
 
         top_children.sort(key=lambda p: p[1], reverse=True)
         elite = copy.deepcopy(top_children[0])
