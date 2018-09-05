@@ -23,7 +23,7 @@ from tensorboardX import SummaryWriter
 # test-2 gpus
 PARENTS_COUNT = 10
 # WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 50
+POPULATION_PER_WORKER = 60
 
 
 # # test-8 gpus
@@ -226,6 +226,7 @@ if __name__ == "__main__":
     gen_idx = 0
     reward_max_last = None
     elite = None
+    Increase = False
 
     while True:
         p_input = []
@@ -287,8 +288,12 @@ if __name__ == "__main__":
             pickle.dump(next_parents, output_file, True)
 
         if reward_max == reward_max_last:
-            if init_scale <= 0.1:
-                init_scale = 0.1
+            if init_scale == 0.0625:
+                Increase = True
+            if init_scale == 1:
+                Increase = False
+            if Increase:
+                init_scale = init_scale * 2
             else:
                 init_scale = init_scale / 2
 
