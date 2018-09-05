@@ -226,7 +226,7 @@ if __name__ == "__main__":
     gen_idx = 0
     reward_max_last = None
     elite = None
-    pool = mp.Pool(workers_number)
+    #pool = mp.Pool(workers_number)
 
     while True:
         for u in range(workers_number):
@@ -238,7 +238,7 @@ if __name__ == "__main__":
                 device = devices[device_id]
             p_input.append((pro, scale_step, device, env))
 
-        # pool = mp.Pool(workers_number)  # mp.cpu_count()
+        pool = mp.Pool(workers_number)  # mp.cpu_count()
         logger.debug("cpu_count():{0}".format(mp.cpu_count()))
         result = pool.map(worker_func, p_input)
         pool.close()
