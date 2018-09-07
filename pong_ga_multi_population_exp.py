@@ -178,7 +178,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
     #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
 
-    return OutputItem(top_children=child[0], speed_p=speed_p)
+    return OutputItem(top_children=child[0][0].state_dict(), speed_p=speed_p)
         #output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
