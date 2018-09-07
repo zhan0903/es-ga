@@ -23,7 +23,7 @@ from tensorboardX import SummaryWriter
 # test-2 gpus
 #PARENTS_COUNT = 10
 # WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 100
+POPULATION_PER_WORKER = 20
 
 
 # # test-8 gpus
@@ -258,6 +258,7 @@ if __name__ == "__main__":
         top_children.sort(key=lambda p: p[1], reverse=True)
         elite = copy.deepcopy(top_children[0])
         top_rewards = [p[1] for p in top_children]
+        logger.debug("top_rewards:{0}".format(top_rewards))
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
         reward_std = np.std(top_rewards)
