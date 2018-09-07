@@ -22,8 +22,8 @@ from tensorboardX import SummaryWriter
 
 # test-2 gpus
 #PARENTS_COUNT = 10
-# WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 20
+workers_number = 20
+POPULATION_PER_WORKER = 100
 
 
 # # test-8 gpus
@@ -40,7 +40,7 @@ POPULATION_PER_WORKER = 20
 MAX_SEED = 2**32 - 1
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('debug.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -110,7 +110,7 @@ def mutate_net(env_m, p_net, seed, noise_std, device):
 
 
 # out_item = (reward_max_p, speed_p)
-OutputItem = collections.namedtuple('OutputItem', field_names=['top_children', 'speed_p'])
+OutputItem = collections.namedtuple('OutputItem', field_names=['top_children_p', 'speed_p'])
 
 
 # def build_net(env_b, seeds, device="cpu"):
@@ -150,13 +150,13 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
         # solve pro do not sum to 1
         #pro_list = np.array(pro_list)
         #pro_list = pro_list/sum(pro_list)
-        parent = np.random.randint(0, 21)
+        parent = np.random.randint(0, len(parents_w))
         #parent = np.random.choice(parent_list, p=pro_list)
         child_seed = np.random.randint(MAX_SEED)
         child_net = mutate_net(env_w, parents_w[parent], child_seed, noise_step, device_w)
         reward, steps = evaluate(env_w, child_net, device_w)
         batch_steps_w += steps
-        child.append((child_net, reward))
+        child.append((child_net.state_dict(), reward))
     # if elite:
     #     child.extend(elite)
     #     elite = []
@@ -167,7 +167,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     #     elite.append(copy.deepcopy(child[k]))
     # elite = copy.deepcopy(child[0])
     speed_p = batch_steps_w / (time.time() - t_start)
-    out_item = (child[0][0].state_dict(), speed_p)
+    #out_item = (child[0], speed_p)
     # top_children_w = []
     # out_item = (reward_max_p, speed_p)
     # for k in range(PARENTS_COUNT):
@@ -178,7 +178,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
     #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
     #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
-    return out_item
+    #return out_item
+    return OutputItem(top_children_p=child[0], speed_p=speed_p)
     # output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
@@ -203,7 +204,7 @@ if __name__ == "__main__":
     input_queues = []
 
     # create PARENTS_COUNT parents to share
-    for _ in range(21):
+    for _ in range(workers_number+1):
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
@@ -219,7 +220,7 @@ if __name__ == "__main__":
     #     value_d.append(1/PARENTS_COUNT)
     # pro = F.softmax(torch.tensor(value_d), dim=0)
 
-    workers_number = 20 # mp.cpu_count()  # 10
+    #workers_number = 20 # mp.cpu_count()  # 10
     #p_input = []
     init_scale = 1
     speed = 0
@@ -244,21 +245,22 @@ if __name__ == "__main__":
         result = pool.map(worker_func, p_input)
         pool.close()
         pool.join()
-        logger.debug("len of result:{0}".format(len(result)))
+        logger.debug("len of result:{0}, type of result[0]:{1}".format(len(result), type(result[0])))
 
         top_children = []
         for item in result:
-            top_children.extend(item[0])
-            speed += item[1]
+            top_children.append(item.top_children_p)
+            speed += item.speed_p
 
         if elite is not None:
             top_children.append(elite)
             logger.debug("elite:{}".format(elite[0]['fc.2.bias']))
 
+        logger.debug("len of top_children:{0}, top_children[0]:{1}".
+                     format(len(top_children), top_children[0][0]['fc.2.bias']))
         top_children.sort(key=lambda p: p[1], reverse=True)
         elite = copy.deepcopy(top_children[0])
         top_rewards = [p[1] for p in top_children]
-        logger.debug("top_rewards:{0}, top_children:{1}".format(top_rewards, top_children))
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
         reward_std = np.std(top_rewards)
@@ -274,7 +276,7 @@ if __name__ == "__main__":
         # top_children[i][0]
         # logger.debug("len of top_children:{0}".format(len(top_children)))
         # assert len(top_children) == 24
-        for i in range(len(result)):
+        for i in range(len(top_children)):
             new_net = Net(env.observation_space.shape, env.action_space.n)  # .to(device)
             new_net.load_state_dict(top_children[i][0])
             next_parents.append(new_net.cpu().state_dict())
@@ -284,8 +286,8 @@ if __name__ == "__main__":
         #     value_d.append(top_children[l][1])
         # pro = F.softmax(torch.tensor(value_d), dim=0)
         # elite = copy.deepcopy(top_children[0])
-        logger.debug("Main, next_parents[0]:{0}, init_scale:{1}, pro_list:{2}, len(next_parents:{3})".
-                     format(next_parents[0]['fc.2.bias'], init_scale, pro, len(next_parents)))
+        logger.debug("Main, next_parents[0]:{0}, init_scale:{1}, len(next_parents:{2})".
+                     format(next_parents[0]['fc.2.bias'], init_scale, len(next_parents)))
 
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
