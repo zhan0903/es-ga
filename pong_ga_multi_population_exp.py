@@ -257,7 +257,7 @@ if __name__ == "__main__":
 
         top_children.sort(key=lambda p: p[1], reverse=True)
         elite = copy.deepcopy(top_children[0])
-        top_rewards = [p[1] for p in top_children[:]]
+        top_rewards = [p[1] for p in top_children]
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
         reward_std = np.std(top_rewards)
