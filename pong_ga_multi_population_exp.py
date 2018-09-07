@@ -167,6 +167,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     #     elite.append(copy.deepcopy(child[k]))
     # elite = copy.deepcopy(child[0])
     speed_p = batch_steps_w / (time.time() - t_start)
+    out_item = (child[0][0].state_dict(), speed_p)
     # top_children_w = []
     # out_item = (reward_max_p, speed_p)
     # for k in range(PARENTS_COUNT):
@@ -177,9 +178,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
     #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
     #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
-
-    return OutputItem(top_children=child[0][0].state_dict(), speed_p=speed_p)
-        #output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
+    return out_item
+    # output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
 if __name__ == "__main__":
@@ -248,8 +248,8 @@ if __name__ == "__main__":
 
         top_children = []
         for item in result:
-            top_children.extend(item.top_children)
-            speed += item.speed_p
+            top_children.extend(item[0])
+            speed += item[1]
 
         if elite is not None:
             top_children.append(elite)
