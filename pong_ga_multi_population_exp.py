@@ -123,10 +123,10 @@ OutputItem = collections.namedtuple('OutputItem', field_names=['top_children', '
 def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     t_start = time.time()
     # parent_list = []
-    pro_list = input_w[0]
-    scale_step_w = input_w[1]
-    device_w = input_w[2]
-    env_w = input_w[3]
+    # pro_list = input_w[0]
+    scale_step_w = input_w[0]
+    device_w = input_w[1]
+    env_w = input_w[2]
 
     # this is necessary
     if device_w != "cpu":
@@ -214,10 +214,10 @@ if __name__ == "__main__":
         pickle.dump(share_parents, output_file, True)
 
     #logger.debug("parent[0]['fc.2.bias']:{}".format(share_parents[0]))
-    value_d = []
-    for l in range(PARENTS_COUNT):
-        value_d.append(1/PARENTS_COUNT)
-    pro = F.softmax(torch.tensor(value_d), dim=0)
+    # value_d = []
+    # for l in range(PARENTS_COUNT):
+    #     value_d.append(1/PARENTS_COUNT)
+    # pro = F.softmax(torch.tensor(value_d), dim=0)
 
     workers_number = 20 # mp.cpu_count()  # 10
     #p_input = []
@@ -237,7 +237,7 @@ if __name__ == "__main__":
             else:
                 device_id = u % gpu_number
                 device = devices[device_id]
-            p_input.append((pro, scale_step, device, env))
+            p_input.append((scale_step, device, env))
 
         pool = mp.Pool(workers_number)  # mp.cpu_count()
         # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
@@ -257,7 +257,7 @@ if __name__ == "__main__":
 
         top_children.sort(key=lambda p: p[1], reverse=True)
         elite = copy.deepcopy(top_children[0])
-        top_rewards = [p[1] for p in top_children[:PARENTS_COUNT]]
+        top_rewards = [p[1] for p in top_children[:]]
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
         reward_std = np.std(top_rewards)
