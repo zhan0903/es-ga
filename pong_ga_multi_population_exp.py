@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
-#import gym
+# import gym
 import ptan
 import gym.spaces
-#import roboschool
+# import roboschool
 import collections
 import copy
 import time
@@ -22,9 +22,11 @@ from tensorboardX import SummaryWriter
 
 # test-2 gpus
 #PARENTS_COUNT = 10
-workers_number = 20
-POPULATION_PER_WORKER = 100
-
+# workers_number = 20
+# POPULATION_PER_WORKER = 100
+# debug
+# workers_number = 2
+# POPULATION_PER_WORKER = 5
 
 # # test-8 gpus
 # PARENTS_COUNT = 10
@@ -39,12 +41,11 @@ POPULATION_PER_WORKER = 100
 
 MAX_SEED = 2**32 - 1
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-fh = logging.FileHandler('debug.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-logger.addHandler(fh)
+# logger = logging.getLogger(__name__)
+# fh = logging.FileHandler('debug.log')
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# fh.setFormatter(formatter)
+# logger.addHandler(fh)
 
 
 class Net(nn.Module):
@@ -127,6 +128,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     scale_step_w = input_w[0]
     device_w = input_w[1]
     env_w = input_w[2]
+    population_per_worker_w = input_w[3]
 
     # this is necessary
     if device_w != "cpu":
@@ -143,15 +145,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
         parents_w = pickle.load(input_file)
 
     noise_step = np.random.normal(scale=scale_step_w)
-    #logger.debug("Before, current_process: {0}, parents:{1},pro_list:{2}".format(mp.current_process(),
-    #             parents_w[0]['fc.2.bias'], pro_list))
-
-    for _ in range(POPULATION_PER_WORKER):
-        # solve pro do not sum to 1
-        #pro_list = np.array(pro_list)
-        #pro_list = pro_list/sum(pro_list)
+    for _ in range(population_per_worker_w):
         parent = np.random.randint(0, len(parents_w))
-        #parent = np.random.choice(parent_list, p=pro_list)
         child_seed = np.random.randint(MAX_SEED)
         child_net = mutate_net(env_w, parents_w[parent], child_seed, noise_step, device_w)
         reward, steps = evaluate(env_w, child_net, device_w)
@@ -168,10 +163,11 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # elite = copy.deepcopy(child[0])
     speed_p = batch_steps_w / (time.time() - t_start)
     #out_item = (child[0], speed_p)
-    # top_children_w = []
+    top_children_w = []
     # out_item = (reward_max_p, speed_p)
-    # for k in range(PARENTS_COUNT):
-    #    top_children_w.append((child[k][0].state_dict(), child[k][1])) # cpu()
+    for k in range(2):
+        top_children_w.append(child[k])
+       # top_children_w.append((child[k][0].state_dict(), child[k][1])) # cpu()
     # reward_max_w = top_children_w[0][1]
     # if reward_max_w != -21:
     # return OutputItem(top_children_w, speed_p=speed_p)
@@ -179,7 +175,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
     #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
     #return out_item
-    return OutputItem(top_children_p=child[0], speed_p=speed_p)
+    return OutputItem(top_children_p=top_children_w, speed_p=speed_p)
     # output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
@@ -188,11 +184,25 @@ if __name__ == "__main__":
     writer = SummaryWriter(comment="-pong-ga-multi-population-exp")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
+    parser.add_argument("--debug", default=False, action="store_true", help="Enable debug")
     args = parser.parse_args()
     devices = []
 
+    logger = logging.getLogger(__name__)
+    if args.debug:
+        logger.setLevel(level=logging.DEBUG)
+        workers_number = 2
+        population_per_worker = 5
+    else:
+        logger.setLevel(level=logging.INFO)
+        workers_number = 20
+        population_per_worker = 100
+    fh = logging.FileHandler('debug.log')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
     gpu_number = torch.cuda.device_count()
-    #logger.debug("gpu number:{0}".format(torch.cuda.device_count()))
     if gpu_number >= 1 and args.cuda:
         for i in range(gpu_number):
             devices.append("cuda:{0}".format(i))
@@ -208,7 +218,6 @@ if __name__ == "__main__":
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
-        #share_parent.share_memory()
         share_parents.append(share_parent.state_dict())
 
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
@@ -238,7 +247,7 @@ if __name__ == "__main__":
             else:
                 device_id = u % gpu_number
                 device = devices[device_id]
-            p_input.append((scale_step, device, env))
+            p_input.append((scale_step, device, env, population_per_worker))
 
         pool = mp.Pool(workers_number)  # mp.cpu_count()
         # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
@@ -249,7 +258,7 @@ if __name__ == "__main__":
 
         top_children = []
         for item in result:
-            top_children.append(item.top_children_p)
+            top_children.extend(item.top_children_p)
             speed += item.speed_p
 
         if elite is not None:
