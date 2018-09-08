@@ -207,11 +207,18 @@ if __name__ == "__main__":
     reward_max_last = None
     elite = None
     Increase = False
+    scale_steps = []
+
+    for m in range(species_number):
+        scale_step = (m + 1) * (1 / species_number)
+        scale_steps.append(scale_step)
 
     while True:
         p_input = []
         for u in range(species_number):
-            scale_step = (u + 1) * (init_scale / species_number)
+            scale_idx = np.random.randint(0, species_number)
+            scale_step = scale_steps[scale_idx]
+            # scale_step = (u + 1) * (init_scale / species_number)
             if gpu_number == 0:
                 device = "cpu"
             else:
