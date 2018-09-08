@@ -20,32 +20,8 @@ from torch.utils.data import Dataset, DataLoader
 
 from tensorboardX import SummaryWriter
 
-# test-2 gpus
-#PARENTS_COUNT = 10
-# workers_number = 20
-# POPULATION_PER_WORKER = 100
-# debug
-# workers_number = 2
-# POPULATION_PER_WORKER = 5
-
-# # test-8 gpus
-# PARENTS_COUNT = 10
-# WORKERS_COUNT = 24
-# POPULATION_PER_WORKER = 100
-
-# # debug
-# PARENTS_COUNT = 2
-# WORKERS_COUNT = 2
-# POPULATION_PER_WORKER = 10
-#
 
 MAX_SEED = 2**32 - 1
-
-# logger = logging.getLogger(__name__)
-# fh = logging.FileHandler('debug.log')
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# fh.setFormatter(formatter)
-# logger.addHandler(fh)
 
 
 class Net(nn.Module):
@@ -165,7 +141,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     #out_item = (child[0], speed_p)
     top_children_w = []
     # out_item = (reward_max_p, speed_p)
-    for k in range(2):
+    for k in range(len(parents_w)):
         top_children_w.append(child[k])
        # top_children_w.append((child[k][0].state_dict(), child[k][1])) # cpu()
     # reward_max_w = top_children_w[0][1]
@@ -191,12 +167,14 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     if args.debug:
         logger.setLevel(level=logging.DEBUG)
-        workers_number = 2
+        species_number = 2
         population_per_worker = 5
+        parents_number = 2
     else:
         logger.setLevel(level=logging.INFO)
-        workers_number = 20
+        species_number = 20
         population_per_worker = 100
+        parents_number = 10
     fh = logging.FileHandler('debug.log')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
@@ -214,7 +192,7 @@ if __name__ == "__main__":
     input_queues = []
 
     # create PARENTS_COUNT parents to share
-    for _ in range(workers_number+1):
+    for _ in range(species_number+1):
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
@@ -223,14 +201,6 @@ if __name__ == "__main__":
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
         pickle.dump(share_parents, output_file, True)
 
-    #logger.debug("parent[0]['fc.2.bias']:{}".format(share_parents[0]))
-    # value_d = []
-    # for l in range(PARENTS_COUNT):
-    #     value_d.append(1/PARENTS_COUNT)
-    # pro = F.softmax(torch.tensor(value_d), dim=0)
-
-    #workers_number = 20 # mp.cpu_count()  # 10
-    #p_input = []
     init_scale = 1
     speed = 0
     gen_idx = 0
@@ -240,8 +210,8 @@ if __name__ == "__main__":
 
     while True:
         p_input = []
-        for u in range(workers_number):
-            scale_step = (u + 1) * (init_scale / workers_number)
+        for u in range(species_number):
+            scale_step = (u + 1) * (init_scale / species_number)
             if gpu_number == 0:
                 device = "cpu"
             else:
@@ -249,7 +219,7 @@ if __name__ == "__main__":
                 device = devices[device_id]
             p_input.append((scale_step, device, env, population_per_worker))
 
-        pool = mp.Pool(workers_number)  # mp.cpu_count()
+        pool = mp.Pool(species_number)  # mp.cpu_count()
         # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
         result = pool.map(worker_func, p_input)
         pool.close()
@@ -278,14 +248,14 @@ if __name__ == "__main__":
         writer.add_scalar("reward_max", reward_max, gen_idx)
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
-            gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
+        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m, init_scale=%f" % (
+            gen_idx, reward_mean, reward_max, reward_std, speed, total_time, init_scale))
 
         next_parents = []
         # top_children[i][0]
         # logger.debug("len of top_children:{0}".format(len(top_children)))
         # assert len(top_children) == 24
-        for i in range(len(top_children)):
+        for i in range(parents_number):
             new_net = Net(env.observation_space.shape, env.action_space.n)  # .to(device)
             new_net.load_state_dict(top_children[i][0])
             next_parents.append(new_net.cpu().state_dict())
