@@ -24,6 +24,13 @@ from tensorboardX import SummaryWriter
 
 MAX_SEED = 2**32 - 1
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+fh = logging.FileHandler('debug.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
 
 class Net(nn.Module):
     def __init__(self, input_shape, n_actions):
@@ -99,7 +106,7 @@ OutputItem = collections.namedtuple('OutputItem', field_names=['top_children_p',
 
 
 def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
-    t_start = time.time()
+    parent_list = []
     # parent_list = []
     # pro_list = input_w[0]
     scale_step_w = input_w[0]
@@ -119,11 +126,21 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     batch_steps_w = 0
     child = []
     with open(r"my_trainer_objects.pkl", "rb") as input_file:
-        parents_w = pickle.load(input_file)
+        parents_pro = pickle.load(input_file)
 
+    parents_w = parents_pro[:-1]
+    pro_list = parents_pro[-1]
     noise_step = np.random.normal(scale=scale_step_w)
+
+    for n in range(len(parents_w)):
+        parent_list.append(n)
+
+    # print("pro_list:{0},parent_list:{1}".format(pro_list,parent_list))
     for _ in range(population_per_worker_w):
-        parent = np.random.randint(0, len(parents_w))
+        pro_list = np.array(pro_list)
+        pro_list = pro_list / sum(pro_list)
+        parent = np.random.choice(parent_list, p=pro_list)
+        # parent = np.random.randint(0, len(parents_w))
         child_seed = np.random.randint(MAX_SEED)
         child_net = mutate_net(env_w, parents_w[parent], child_seed, noise_step, device_w)
         reward, steps = evaluate(env_w, child_net, device_w)
@@ -166,7 +183,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     devices = []
 
-    logger = logging.getLogger(__name__)
     if args.debug:
         logger.setLevel(level=logging.DEBUG)
         species_number = 2
@@ -177,10 +193,6 @@ if __name__ == "__main__":
         species_number = 20
         population_per_worker = 100
         parents_number = 10
-    fh = logging.FileHandler('debug.log')
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
 
     gpu_number = torch.cuda.device_count()
     if gpu_number >= 1 and args.cuda:
@@ -194,17 +206,22 @@ if __name__ == "__main__":
     input_queues = []
 
     # create PARENTS_COUNT parents to share
-    for _ in range(species_number+1):
+    for _ in range(parents_number):
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
         share_parents.append(share_parent.state_dict())
 
+    pro_list_m = []
+    for _ in range(parents_number):
+        pro_list_m.append(1 / parents_number)
+    share_parents.append(pro_list_m)
+
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
         pickle.dump(share_parents, output_file, True)
 
     init_scale = 1.0
-    frames_per_ged = 0
+    frames_per_g = 0
     gen_idx = 0
     reward_max_last = None
     elite = None
@@ -278,11 +295,13 @@ if __name__ == "__main__":
             new_net.load_state_dict(top_children[i][0])
             next_parents.append(new_net.cpu().state_dict())
             # next_parents.append(top_children[i][0].cpu())
-        # value_d = []
-        # for l in range(PARENTS_COUNT):
-        #     value_d.append(top_children[l][1])
-        # pro = F.softmax(torch.tensor(value_d), dim=0)
-        # elite = copy.deepcopy(top_children[0])
+        value_d = []
+        for l in range(parents_number):
+            value_d.append(top_children[l][1])
+        pro = F.softmax(torch.tensor(value_d), dim=0)
+
+        next_parents.append(pro)
+
         logger.debug("Main, next_parents[0]:{0}, init_scale:{1}, len(next_parents:{2})".
                      format(next_parents[0]['fc.2.bias'], init_scale, len(next_parents)))
 
