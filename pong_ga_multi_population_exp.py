@@ -88,7 +88,7 @@ def mutate_net(env_m, p_net, seed, noise_std, device):
 
 
 # out_item = (reward_max_p, speed_p)
-OutputItem = collections.namedtuple('OutputItem', field_names=['top_children_p', 'speed_p'])
+OutputItem = collections.namedtuple('OutputItem', field_names=['top_children_p', 'frames'])
 
 
 # def build_net(env_b, seeds, device="cpu"):
@@ -138,7 +138,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # for k in range(ELITE_NUMBER):
     #     elite.append(copy.deepcopy(child[k]))
     # elite = copy.deepcopy(child[0])
-    speed_p = batch_steps_w / (time.time() - t_start)
+    # speed_p = batch_steps_w / (time.time() - t_start)
+    frames = batch_steps_w
     #out_item = (child[0], speed_p)
     top_children_w = []
     # out_item = (reward_max_p, speed_p)
@@ -152,7 +153,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
     #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
     #return out_item
-    return OutputItem(top_children_p=top_children_w, speed_p=speed_p)
+    return OutputItem(top_children_p=top_children_w, frames=frames)
     # output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
@@ -203,16 +204,18 @@ if __name__ == "__main__":
         pickle.dump(share_parents, output_file, True)
 
     init_scale = 1.0
-    speed = 0
+    frames_per_ged = 0
     gen_idx = 0
     reward_max_last = None
     elite = None
     Increase = False
     scale_steps = []
+    all_frames = 0
 
     while True:
         p_input = []
         scale_steps = []
+        t_start = time.time()
 
         for m in range(species_number):
             scale_step = (m + 1) * (init_scale / species_number)
@@ -239,7 +242,10 @@ if __name__ == "__main__":
         top_children = []
         for item in result:
             top_children.extend(item.top_children_p)
-            speed += item.speed_p
+            frames_per_g += item.frames
+
+        all_frames = all_frames + frames_per_g
+        speed = frames_per_g/(time.time()-t_start)
 
         if elite is not None:
             top_children.append(elite)
@@ -258,8 +264,10 @@ if __name__ == "__main__":
         writer.add_scalar("reward_max", reward_max, gen_idx)
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m, init_scale=%f" % (
-            gen_idx, reward_mean, reward_max, reward_std, speed, total_time, init_scale))
+        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
+              "total_running_time=%.2f/m, init_scale=%f, all_frames=%f" % (gen_idx, reward_mean, reward_max,
+                                                                           reward_std, speed, total_time,
+                                                                           init_scale, all_frames))
 
         next_parents = []
         # top_children[i][0]
@@ -288,7 +296,7 @@ if __name__ == "__main__":
 
         reward_max_last = reward_max
         gen_idx += 1
-        speed = 0
+        frames_per_g = 0
 
     # gen_idx = 0
     # logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
