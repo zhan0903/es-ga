@@ -283,6 +283,7 @@ if __name__ == "__main__":
 
         if reward_max == reward_max_last:
             if init_scale > 0.1:
+                logger.debug("init_scale:{}".format(init_scale))
                 init_scale = init_scale-0.1
 
         reward_max_last = reward_max
