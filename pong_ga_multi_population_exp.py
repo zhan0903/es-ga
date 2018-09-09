@@ -11,6 +11,7 @@ import numpy as np
 import argparse
 import logging
 import pickle
+import json
 
 import torch
 import torch.nn as nn
@@ -209,12 +210,14 @@ if __name__ == "__main__":
     Increase = False
     scale_steps = []
 
-    for m in range(species_number):
-        scale_step = (m + 1) * (1 / species_number)
-        scale_steps.append(scale_step)
-
     while True:
         p_input = []
+        scale_steps = []
+
+        for m in range(species_number):
+            scale_step = (m + 1) * (init_scale / species_number)
+            scale_steps.append(scale_step)
+
         for u in range(species_number):
             scale_idx = np.random.randint(0, species_number)
             scale_step = scale_steps[scale_idx]
@@ -279,13 +282,7 @@ if __name__ == "__main__":
             pickle.dump(next_parents, output_file, True)
 
         if reward_max == reward_max_last:
-            if init_scale == 0.0625:
-                Increase = True
-            if init_scale == 1:
-                Increase = False
-            if Increase:
-                init_scale = init_scale * 2
-            else:
+            if init_scale >= 0.01:
                 init_scale = init_scale / 2
 
         reward_max_last = reward_max
