@@ -202,7 +202,7 @@ if __name__ == "__main__":
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
         pickle.dump(share_parents, output_file, True)
 
-    init_scale = 1
+    init_scale = 1.0
     speed = 0
     gen_idx = 0
     reward_max_last = None
