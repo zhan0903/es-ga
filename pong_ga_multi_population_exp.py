@@ -176,7 +176,7 @@ if __name__ == "__main__":
         logger.setLevel(level=logging.INFO)
         species_number = 20
         population_per_worker = 100
-        parents_number = 10
+        parents_number = 20
     fh = logging.FileHandler('debug.log')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
@@ -204,7 +204,7 @@ if __name__ == "__main__":
         pickle.dump(share_parents, output_file, True)
 
     init_scale = 1.0
-    frames_per_ged = 0
+    frames_per_g = 0
     gen_idx = 0
     reward_max_last = None
     elite = None
@@ -244,7 +244,7 @@ if __name__ == "__main__":
             top_children.extend(item.top_children_p)
             frames_per_g += item.frames
 
-        all_frames = all_frames + frames_per_g
+        all_frames = (all_frames + frames_per_g)/1000
         speed = frames_per_g/(time.time()-t_start)
 
         if elite is not None:
@@ -265,7 +265,7 @@ if __name__ == "__main__":
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
-              "total_running_time=%.2f/m, init_scale=%f, all_frames=%f" % (gen_idx, reward_mean, reward_max,
+              "total_running_time=%.2f/m, init_scale=.2%f, all_frames=.2%f" % (gen_idx, reward_mean, reward_max,
                                                                            reward_std, speed, total_time,
                                                                            init_scale, all_frames))
 
