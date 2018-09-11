@@ -23,13 +23,11 @@ from tensorboardX import SummaryWriter
 
 
 MAX_SEED = 2**32 - 1
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-fh = logging.FileHandler('debug.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-logger.addHandler(fh)
+# logger = logging.getLogger(__name__)
+# fh = logging.FileHandler('debug.log')
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# fh.setFormatter(formatter)
+# logger.addHandler(fh)
 
 
 class Net(nn.Module):
@@ -135,7 +133,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     for n in range(len(parents_w)):
         parent_list.append(n)
 
-    # print("pro_list:{0},parent_list:{1}".format(pro_list,parent_list))
+    # logger.setLevel(level=logging.DEBUG)
+    # logging.debug("pro_list:{0},parent_list:{1}".format(pro_list, parent_list))
     for _ in range(population_per_worker_w):
         pro_list = np.array(pro_list)
         pro_list = pro_list / sum(pro_list)
@@ -174,7 +173,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     mp.set_start_method('spawn')
     writer = SummaryWriter(comment="-pong-ga-multi-population-exp")
     parser = argparse.ArgumentParser()
@@ -183,7 +182,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     devices = []
 
+    logger = logging.getLogger(__name__)
+    fh = logging.FileHandler('debug.log')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
     if args.debug:
+        # logging.debug("here")
+        # logging.basicConfig(filename='debug.log', level=logging.DEBUG,
+        #                     format='%(relativeCreated)6d %(threadName)s %(message)s')
+        # logging.debug("there")
         logger.setLevel(level=logging.DEBUG)
         species_number = 2
         population_per_worker = 5
@@ -282,9 +291,8 @@ if __name__ == "__main__":
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
-              "total_running_time=%.2f/m, init_scale=%f, all_frames=%f" % (gen_idx, reward_mean, reward_max,
-                                                                           reward_std, speed, total_time,
-                                                                           init_scale, all_frames))
+              "total_running_time=%.2f/m, init_scale=%.2f, all_frames=%.2f" %
+              (gen_idx, reward_mean, reward_max, reward_std, speed, total_time, init_scale, all_frames))
 
         next_parents = []
         # top_children[i][0]
@@ -310,59 +318,13 @@ if __name__ == "__main__":
 
         if reward_max == reward_max_last:
             if round(init_scale, 1) > 0.1:
-                logger.debug("init_scale:{}".format(init_scale))
+                logging.debug("init_scale:{}".format(init_scale))
                 init_scale = init_scale-0.1
 
         reward_max_last = reward_max
         gen_idx += 1
         frames_per_g = 0
 
-    # gen_idx = 0
-    # logger.debug("share_parent[0]['fc.2.bias']:{0}".format(share_parents[0]['fc.2.bias']))
-    # while True:
-    #     top_children = []
-    #     speed = 0
-    #     # out_item = (reward_max_p, speed_p)
-    #     while len(top_children) < (WORKERS_COUNT*PARENTS_COUNT):
-    #         out_item = output_queue.get()
-    #         top_children.extend(out_item.top_children)
-    #         speed += out_item.speed_p
-    #
-    #     top_children.sort(key=lambda p: p[1], reverse=True)
-    #     top_rewards = [p[1] for p in top_children[:PARENTS_COUNT]]
-    #     reward_mean = np.mean(top_rewards)
-    #     reward_max = np.max(top_rewards)
-    #     reward_std = np.std(top_rewards)
-    #     writer.add_scalar("reward_mean", reward_mean, gen_idx)
-    #     writer.add_scalar("reward_std", reward_std, gen_idx)
-    #     writer.add_scalar("reward_max", reward_max, gen_idx)
-    #     writer.add_scalar("speed", speed, gen_idx)
-    #     total_time = (time.time() - time_start) / 60
-    #     print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
-    #         gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
-    #
-    #     if reward_mean == 21:
-    #         exit(0)
-    #     next_parents = []
-    #     #top_children[i][0]
-    #     logger.debug("len of top_children:{0}".format(len(top_children)))
-    #     # assert len(top_children) == 24
-    #     for i in range(PARENTS_COUNT):
-    #         new_net = Net(env.observation_space.shape, env.action_space.n)#.to(device)
-    #         new_net.load_state_dict(top_children[i][0])
-    #         next_parents.append(new_net.cpu().state_dict())
-    #         #next_parents.append(top_children[i][0].cpu())
-    #     logger.debug("Main, next_parents[0]:{0}".format(next_parents[0]['fc.2.bias']))
-    #     value_d = []
-    #     for l in range(PARENTS_COUNT):
-    #         value_d.append(top_children[l][1])
-    #     pro = F.softmax(torch.tensor(value_d), dim=0)
-    #
-    #     with open(r"my_trainer_objects.pkl", "wb") as output_file:
-    #         pickle.dump(next_parents, output_file, True)
-    #
-    #     for worker_queue in input_queues:
-    #         worker_queue.put(pro)
-    #     gen_idx += 1
-
-        # test pool-version branch
+#
+# if __name__ == '__main__':
+#     main()
