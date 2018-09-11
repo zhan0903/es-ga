@@ -1,7 +1,10 @@
 {
     "game": "PongNoFrameskip-v4",
+    "version": "pool",
+    "share parents": true,
     "species_number": 2,
     "population_per_worker": 5,
     "parents_number": 2,
-    "debug": 1
+    "debug": 1,
+    "others": null
 }
