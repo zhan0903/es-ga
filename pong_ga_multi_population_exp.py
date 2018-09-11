@@ -265,7 +265,7 @@ if __name__ == "__main__":
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
-              "total_running_time=%.2f/m, init_scale=.2%f, all_frames=.2%f" % (gen_idx, reward_mean, reward_max,
+              "total_running_time=%.2f/m, init_scale=%.2f, all_frames=%.2f" % (gen_idx, reward_mean, reward_max,
                                                                            reward_std, speed, total_time,
                                                                            init_scale, all_frames))
 
