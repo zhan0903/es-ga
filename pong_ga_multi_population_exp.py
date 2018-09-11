@@ -109,7 +109,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # pro_list = input_w[0]
     scale_step_w = input_w[0]
     device_w = input_w[1]
-    env_w = input_w[2]
+    env_w = make_env()
     population_per_worker_w = input_w[3]
 
     # this is necessary
@@ -189,10 +189,6 @@ if __name__ == '__main__':
     logger.addHandler(fh)
 
     if args.debug:
-        # logging.debug("here")
-        # logging.basicConfig(filename='debug.log', level=logging.DEBUG,
-        #                     format='%(relativeCreated)6d %(threadName)s %(message)s')
-        # logging.debug("there")
         logger.setLevel(level=logging.DEBUG)
         species_number = 2
         population_per_worker = 5

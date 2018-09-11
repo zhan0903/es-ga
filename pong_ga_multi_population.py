@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-import sys
-import gym
 import ptan
 import gym.spaces
-#import roboschool
 import collections
 import copy
 import time
 import numpy as np
 import argparse
 import logging
+import json
 
 import torch
 import torch.nn as nn
@@ -20,9 +18,9 @@ from torch.utils.data import Dataset, DataLoader
 from tensorboardX import SummaryWriter
 
 # test
-PARENTS_COUNT = 10
-WORKERS_COUNT = 20
-POPULATION_PER_WORKER = 100
+PARENTS_COUNT = 20
+SPECIES_COUNT = 20
+POPULATION_PER_SPECIES = 100
 
 # debug
 # PARENTS_COUNT = 10
@@ -169,7 +167,7 @@ def worker_func(output_queue_w, scale_step_w, device_w="cpu"):
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
-    writer = SummaryWriter(comment="-pong-ga-multi-population")
+    writer = SummaryWriter(comment="-pong-ga-multi-species")
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
     args = parser.parse_args()
