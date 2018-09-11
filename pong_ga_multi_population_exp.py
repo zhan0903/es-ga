@@ -104,8 +104,8 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     # pro_list = input_w[0]
     scale_step_w = input_w[0]
     device_w = input_w[1]
-    env_w = input_w[2]
-    population_per_worker_w = input_w[3]
+    env_w = make_env()
+    population_per_worker_w = input_w[2]
 
     # this is necessary
     if device_w != "cpu":
@@ -230,7 +230,7 @@ if __name__ == "__main__":
             else:
                 device_id = u % gpu_number
                 device = devices[device_id]
-            p_input.append((scale_step, device, env, population_per_worker))
+            p_input.append((scale_step, device, population_per_worker))
 
         pool = mp.Pool(species_number)  # mp.cpu_count()
         # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
