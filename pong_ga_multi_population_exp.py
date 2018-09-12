@@ -12,10 +12,12 @@ import argparse
 import logging
 import pickle
 import json
+from pythonjsonlogger import jsonlogger
 
 import torch
 import torch.nn as nn
 import multiprocessing as mp
+import json_logging
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
@@ -23,6 +25,7 @@ from tensorboardX import SummaryWriter
 
 
 MAX_SEED = 2**32 - 1
+parents_global = []
 # logger = logging.getLogger(__name__)
 # fh = logging.FileHandler('debug.log')
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -81,8 +84,6 @@ def evaluate(env_e, net, device="cpu"):
 
 
 def mutate_net(env_m, p_net, seed, noise_std, device):
-    #new_net = copy.deepcopy(load_state_dict(net)).to(device)
-    #new_net.share_memory()
     new_net_m = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
     new_net_m.load_state_dict(p_net)
     np.random.seed(seed)
@@ -96,142 +97,89 @@ def mutate_net(env_m, p_net, seed, noise_std, device):
 OutputItem = collections.namedtuple('OutputItem', field_names=['top_children_p', 'frames'])
 
 
-# def build_net(env_b, seeds, device="cpu"):
-#     torch.manual_seed(seeds)
-#     net_new = Net(env_b.observation_space.shape, env_b.action_space.n)
-#     net_new.to(device)
-#     return net_new
-
-
 def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
-    parent_list = []
-    # parent_list = []
-    # pro_list = input_w[0]
     scale_step_w = input_w[0]
     device_w = input_w[1]
+    population_per_worker_w = input_w[2]
     env_w = make_env()
-    population_per_worker_w = input_w[3]
 
     # this is necessary
     if device_w != "cpu":
         device_w_id = int(device_w[-1])
         torch.cuda.set_device(device_w_id)
 
-    # for m in range(PARENTS_COUNT):
-    #     parent_list.append(m)
-
-    # elite = None
     batch_steps_w = 0
     child = []
+
     with open(r"my_trainer_objects.pkl", "rb") as input_file:
-        parents_pro = pickle.load(input_file)
+        parents_w = pickle.load(input_file)
 
-    parents_w = parents_pro[:-1]
-    pro_list = parents_pro[-1]
     noise_step = np.random.normal(scale=scale_step_w)
-
-    for n in range(len(parents_w)):
-        parent_list.append(n)
-
-    # logger.setLevel(level=logging.DEBUG)
-    # logging.debug("pro_list:{0},parent_list:{1}".format(pro_list, parent_list))
     for _ in range(population_per_worker_w):
-        pro_list = np.array(pro_list)
-        pro_list = pro_list / sum(pro_list)
-        parent = np.random.choice(parent_list, p=pro_list)
-        # parent = np.random.randint(0, len(parents_w))
+        parent = np.random.randint(0, len(parents_w))
         child_seed = np.random.randint(MAX_SEED)
         child_net = mutate_net(env_w, parents_w[parent], child_seed, noise_step, device_w)
         reward, steps = evaluate(env_w, child_net, device_w)
         batch_steps_w += steps
         child.append((child_net.state_dict(), reward))
-    # if elite:
-    #     child.extend(elite)
-    #     elite = []
-    # if elite is not None:
-    #     child.append(elite)
     child.sort(key=lambda p: p[1], reverse=True)
-    # for k in range(ELITE_NUMBER):
-    #     elite.append(copy.deepcopy(child[k]))
-    # elite = copy.deepcopy(child[0])
-    # speed_p = batch_steps_w / (time.time() - t_start)
     frames = batch_steps_w
-    #out_item = (child[0], speed_p)
     top_children_w = []
-    # out_item = (reward_max_p, speed_p)
     for k in range(len(parents_w)):
         top_children_w.append(child[k])
-       # top_children_w.append((child[k][0].state_dict(), child[k][1])) # cpu()
-    # reward_max_w = top_children_w[0][1]
-    # if reward_max_w != -21:
-    # return OutputItem(top_children_w, speed_p=speed_p)
-    # logger.debug("After, current_process: {0}, top_children_w[0]:{1},child[0]:{2},reward_max:{3}".
-    #              format(mp.current_process(), top_children_w[0][0]['fc.2.bias'],
-    #                     child[0][0].state_dict()['fc.2.bias'], top_children_w[0][1]))
-    #return out_item
+
     return OutputItem(top_children_p=top_children_w, frames=frames)
-    # output_queue_w.put(OutputItem(top_children_w, speed_p=speed_p))
 
 
-if __name__ == '__main__':
+def main(**exp):
     mp.set_start_method('spawn')
     writer = SummaryWriter(comment="-pong-ga-multi-population-exp")
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cuda", default=False, action="store_true", help="Enable cuda")
-    parser.add_argument("--debug", default=False, action="store_true", help="Enable debug")
-    args = parser.parse_args()
     devices = []
 
     logger = logging.getLogger(__name__)
-    fh = logging.FileHandler('debug.log')
+    fh = logging.FileHandler('log.json')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
-    if args.debug:
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    if exp["debug"]:
         logger.setLevel(level=logging.DEBUG)
-        species_number = 2
-        population_per_worker = 5
-        parents_number = 2
     else:
         logger.setLevel(level=logging.INFO)
-        species_number = 20
-        population_per_worker = 100
-        parents_number = 10
+
+    logger.debug("{}".format(str(json.dumps(exp, indent=4, sort_keys=True))))
+    species_number = exp["species_number"]
+    population_per_worker = exp["population_per_worker"]
+    parents_number = exp["parents_number"]
+    init_scale = exp["init_scale"]
 
     gpu_number = torch.cuda.device_count()
-    if gpu_number >= 1 and args.cuda:
+    if gpu_number >= 1:
         for i in range(gpu_number):
             devices.append("cuda:{0}".format(i))
 
     env = make_env()
-    output_queue = mp.SimpleQueue()
     time_start = time.time()
     share_parents = []
-    input_queues = []
 
     # create PARENTS_COUNT parents to share
     for _ in range(parents_number):
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
-        share_parent = Net(env.observation_space.shape, env.action_space.n)#.cuda()#.cpu()
+        share_parent = Net(env.observation_space.shape, env.action_space.n)
         share_parents.append(share_parent.state_dict())
-
-    pro_list_m = []
-    for _ in range(parents_number):
-        pro_list_m.append(1 / parents_number)
-    share_parents.append(pro_list_m)
 
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
         pickle.dump(share_parents, output_file, True)
 
-    init_scale = 1.0
     frames_per_g = 0
     gen_idx = 0
     reward_max_last = None
     elite = None
-    Increase = False
-    scale_steps = []
     all_frames = 0
 
     while True:
@@ -246,20 +194,17 @@ if __name__ == '__main__':
         for u in range(species_number):
             scale_idx = np.random.randint(0, species_number)
             scale_step = scale_steps[scale_idx]
-            # scale_step = (u + 1) * (init_scale / species_number)
             if gpu_number == 0:
                 device = "cpu"
             else:
                 device_id = u % gpu_number
                 device = devices[device_id]
-            p_input.append((scale_step, device, env, population_per_worker))
+            p_input.append((scale_step, device, population_per_worker))
 
-        pool = mp.Pool(species_number)  # mp.cpu_count()
-        # logger.debug("cpu_count():{0}".format(mp.cpu_count()))
+        pool = mp.Pool(species_number)
         result = pool.map(worker_func, p_input)
         pool.close()
         pool.join()
-        logger.debug("len of result:{0}, type of result[0]:{1}".format(len(result), type(result[0])))
 
         top_children = []
         for item in result:
@@ -286,25 +231,15 @@ if __name__ == '__main__':
         writer.add_scalar("reward_max", reward_max, gen_idx)
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
-              "total_running_time=%.2f/m, init_scale=%.2f, all_frames=%.2f" %
-              (gen_idx, reward_mean, reward_max, reward_std, speed, total_time, init_scale, all_frames))
+        logger.info("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
+                    "total_running_time=%.2f/m, init_scale=%.2f, all_frames=%.2f" %
+                    (gen_idx, reward_mean, reward_max, reward_std, speed, total_time, init_scale, all_frames/1000))
 
         next_parents = []
-        # top_children[i][0]
-        # logger.debug("len of top_children:{0}".format(len(top_children)))
-        # assert len(top_children) == 24
         for i in range(parents_number):
-            new_net = Net(env.observation_space.shape, env.action_space.n)  # .to(device)
+            new_net = Net(env.observation_space.shape, env.action_space.n)
             new_net.load_state_dict(top_children[i][0])
             next_parents.append(new_net.cpu().state_dict())
-            # next_parents.append(top_children[i][0].cpu())
-        value_d = []
-        for l in range(parents_number):
-            value_d.append(top_children[l][1])
-        pro = F.softmax(torch.tensor(value_d), dim=0)
-
-        next_parents.append(pro)
 
         logger.debug("Main, next_parents[0]:{0}, init_scale:{1}, len(next_parents:{2})".
                      format(next_parents[0]['fc.2.bias'], init_scale, len(next_parents)))
@@ -315,12 +250,14 @@ if __name__ == '__main__':
         if reward_max == reward_max_last:
             if round(init_scale, 1) > 0.1:
                 logging.debug("init_scale:{}".format(init_scale))
-                init_scale = init_scale-0.1
+                init_scale = 0.9*init_scale
 
         reward_max_last = reward_max
         gen_idx += 1
         frames_per_g = 0
 
-#
-# if __name__ == '__main__':
-#     main()
+
+if __name__ == "__main__":
+    with open(sys.argv[-1], 'r') as f:
+        exp = json.loads(f.read())
+    main(**exp)

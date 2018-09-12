@@ -1,0 +1,10 @@
+{
+    "game": "PongNoFrameskip-v4",
+    "share parents": true,
+    "species_number": 20,
+    "population_per_worker": 100,
+    "parents_number": 20,
+    "debug": 0,
+    "init_scale": 1.0,
+    "comments": "random pick parents, pool version"
+}
