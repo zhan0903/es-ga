@@ -3,7 +3,6 @@ import sys
 # import gym
 import ptan
 import gym.spaces
-# import roboschool
 import collections
 import copy
 import time
@@ -12,12 +11,10 @@ import argparse
 import logging
 import pickle
 import json
-from pythonjsonlogger import jsonlogger
 
 import torch
 import torch.nn as nn
 import multiprocessing as mp
-import json_logging
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
