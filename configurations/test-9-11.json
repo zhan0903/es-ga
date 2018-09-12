@@ -6,5 +6,5 @@
     "parents_number": 20,
     "debug": 0,
     "init_scale": 1.0,
-    "comments": "random pick parents, pool version"
+    "comments": "random pick parents, pool, share parents"
 }

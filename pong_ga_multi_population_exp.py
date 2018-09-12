@@ -151,7 +151,7 @@ def main(**exp):
     else:
         logger.setLevel(level=logging.INFO)
 
-    logger.debug("{}".format(str(json.dumps(exp, indent=4, sort_keys=True))))
+    logger.info("{}".format(str(json.dumps(exp, indent=4, sort_keys=True))))
     species_number = exp["species_number"]
     population_per_worker = exp["population_per_worker"]
     parents_number = exp["parents_number"]
