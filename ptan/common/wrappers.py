@@ -3,7 +3,8 @@
 import numpy as np
 from collections import deque
 import gym
-from gym import spaces
+import gym.spaces as spaces
+# from gym import spaces
 import cv2
 
 
