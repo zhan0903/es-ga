@@ -135,9 +135,17 @@ def evolve(game, exp, logger):
     population_per_worker = exp["population_per_worker"]
     parents_number = exp["parents_number"]
     init_scale = exp["init_scale"]
-    frames = exp["frames"]
+    if exp["frames"][-1] == "B":
+        frames = 1000000000*int(exp["frames"][:-1])
+    elif exp["frames"][-1] == "M":
+        frames = 1000000*int(exp["frames"][:-1])
+    else:
+        frames = int(exp["frames"])
+
+    logger.debug("frames:{}".format(frames))
     devices = []
     evolve_result = {}
+    writer = SummaryWriter(comment="-pong-ga-multi-species")
 
     frames_per_g = 0
     gen_idx = 0
@@ -203,6 +211,15 @@ def evolve(game, exp, logger):
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
         reward_std = np.std(top_rewards)
+        writer.add_scalar("reward_mean", reward_mean, gen_idx)
+        writer.add_scalar("reward_std", reward_std, gen_idx)
+        writer.add_scalar("reward_max", reward_max, gen_idx)
+        writer.add_scalar("speed", speed, gen_idx)
+        total_time = (time.time() - time_start) / 60
+
+        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, total_running_time=%.2f/m" % (
+            gen_idx, reward_mean, reward_max, reward_std, speed, total_time))
+
         next_parents = []
         for i in range(parents_number):
             new_net = Net(env.observation_space.shape, env.action_space.n)
@@ -222,7 +239,6 @@ def evolve(game, exp, logger):
         frames_per_g = 0
 
     total_time = (time.time() - time_start) / 60
-    logger.debug("gen_idx:{}".format(gen_idx))
     evolve_result["gen_idx"] = gen_idx
     evolve_result["reward_mean"] = reward_mean
     evolve_result["reward_max"] = reward_max
