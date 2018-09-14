@@ -142,7 +142,7 @@ def evolve(game, exp, logger):
     else:
         frames = int(exp["frames"])
 
-    logger.debug("frames:{}".format(frames))
+    logger.info("frames:{}".format(frames))
     devices = []
     evolve_result = {}
     writer = SummaryWriter(comment="-pong-ga-multi-species")
