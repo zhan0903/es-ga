@@ -217,9 +217,9 @@ def evolve(game, exp, logger):
         writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
 
-        print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
-              "init_scale=%.2f, total_running_time=%.2f/m" % (
-               gen_idx, reward_mean, reward_max, reward_std, speed, init_scale, total_time))
+        logger.info("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
+                    "init_scale=%.2f, total_running_time=%.2f/m" % (
+                     gen_idx, reward_mean, reward_max, reward_std, speed, init_scale, total_time))
 
         next_parents = []
         for i in range(parents_number):
@@ -254,7 +254,7 @@ def evolve(game, exp, logger):
 def main(**exp):
     mp.set_start_method('spawn')
     logger = logging.getLogger(__name__)
-    fh = logging.FileHandler('logger.out')
+    fh = logging.FileHandler('./log/logger.out')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
