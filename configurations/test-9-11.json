@@ -3,7 +3,7 @@
     "species_number": 20,
     "population_per_worker": 100,
     "parents_number": 20,
-    "frames": "1M",
+    "frames": "10M",
     "debug": 0,
     "init_scale": 0.5,
     "comments": "9-11-simplified version; parents:random pick, shared; parallel: pool",
