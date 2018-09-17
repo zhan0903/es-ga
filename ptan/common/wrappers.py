@@ -7,7 +7,6 @@ import gym.spaces as spaces
 # from gym import spaces
 import cv2
 
-
 class NoopResetEnv(gym.Wrapper):
     def __init__(self, env=None, noop_max=30):
         """Sample initial states by taking random number of no-ops on reset.
@@ -239,3 +238,6 @@ def wrap_dqn(env, stack_frames=4, episodic_life=True, reward_clipping=True):
     if reward_clipping:
         env = ClippedRewardsWrapper(env)
     return env
+
+
+

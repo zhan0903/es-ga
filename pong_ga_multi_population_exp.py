@@ -22,6 +22,11 @@ from tensorboardX import SummaryWriter
 
 MAX_SEED = 2**32 - 1
 parents_global = []
+# logger = logging.getLogger(__name__)
+# fh = logging.FileHandler('debug.log')
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# fh.setFormatter(formatter)
+# logger.addHandler(fh)
 
 
 class Net(nn.Module):
@@ -58,34 +63,20 @@ def make_env(game):
     return ptan.common.wrappers.wrap_dqn(gym.make(game))
 
 
-def evaluate(game, net, max_noop=30, device="cpu"):
-    env_e = make_env(game)
-
-    noops = np.random.randint(0, max_noop)
-    cur_states = env_e.reset()
-    total_reward = 0
-    # add no-ops
-    for _ in range(noops):
-        new_state, reward, is_done, _ = env_e.step(0)
-        total_reward += reward
-        if is_done:
-            return total_reward
-
-        cur_states = new_state
-
-    # obs = env_e.reset()
-    # reward = 0.0
-    total_frames = 0
+def evaluate(env_e, net, device="cpu"):
+    obs = env_e.reset()
+    reward = 0.0
+    steps = 0
     while True:
-        obs_v = torch.FloatTensor([np.array(cur_states, copy=False)]).to(device)
+        obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
         act_prob = net(obs_v).to(device)
         acts = act_prob.max(dim=1)[1]
         obs, r, done, _ = env_e.step(acts.data.cpu().numpy()[0])
-        total_reward += r
-        total_frames += 1
+        reward += r
+        steps += 4
         if done:
             break
-    return total_reward, total_frames
+    return reward, steps
 
 
 def mutate_net(env_m, p_net, seed, noise_std, device):
@@ -126,7 +117,7 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
         parent = np.random.randint(0, len(parents_w))
         child_seed = np.random.randint(MAX_SEED)
         child_net = mutate_net(env_w, parents_w[parent], child_seed, noise_step, device_w)
-        reward, steps = evaluate(game=game, net=child_net, device=device_w)
+        reward, steps = evaluate(env_w, child_net, device_w)
         batch_steps_w += steps
         child.append((child_net.state_dict(), reward))
     child.sort(key=lambda p: p[1], reverse=True)
@@ -154,7 +145,7 @@ def evolve(game, exp, logger):
     logger.info("frames:{}".format(frames))
     devices = []
     evolve_result = {}
-    # writer = SummaryWriter(comment="-pong-ga-multi-species")
+    writer = SummaryWriter(comment="-pong-ga-multi-species")
 
     frames_per_g = 0
     gen_idx = 0
@@ -220,10 +211,10 @@ def evolve(game, exp, logger):
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
         reward_std = np.std(top_rewards)
-        # writer.add_scalar("reward_mean", reward_mean, gen_idx)
-        # writer.add_scalar("reward_std", reward_std, gen_idx)
-        # writer.add_scalar("reward_max", reward_max, gen_idx)
-        # writer.add_scalar("speed", speed, gen_idx)
+        writer.add_scalar("reward_mean", reward_mean, gen_idx)
+        writer.add_scalar("reward_std", reward_std, gen_idx)
+        writer.add_scalar("reward_max", reward_max, gen_idx)
+        writer.add_scalar("speed", speed, gen_idx)
         total_time = (time.time() - time_start) / 60
 
         logger.info("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s, "
