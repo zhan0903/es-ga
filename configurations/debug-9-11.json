@@ -1,5 +1,5 @@
 {
-    "games": "AmidarNoFrameskip-v4,AssaultNoFrameskip-v4",
+    "games": "AmidarNoFrameskip-v4",
     "species_number": 2,
     "population_per_worker": 5,
     "parents_number": 2,
