@@ -2,7 +2,7 @@
     "games": "AmidarNoFrameskip-v4",
     "species_number": 10,
     "population_per_worker": 60,
-    "parents_number": 20,
+    "parents_number": 10,
     "frames": "200M",
     "debug": 0,
     "init_scale": 0.8,
