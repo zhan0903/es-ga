@@ -22,11 +22,6 @@ from tensorboardX import SummaryWriter
 
 MAX_SEED = 2**32 - 1
 parents_global = []
-# logger = logging.getLogger(__name__)
-# fh = logging.FileHandler('debug.log')
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# fh.setFormatter(formatter)
-# logger.addHandler(fh)
 
 
 class Net(nn.Module):
