@@ -72,6 +72,7 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
             obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
             print("obs_v:{}".format(obs_v))
             act_prob = net(obs_v).to(device)
+
             acts = act_prob.max(dim=1)[1]
             obs, r, done, _ = env_e.step(acts.data.cpu().numpy()[0])
             reward += r
@@ -181,7 +182,7 @@ def evolve(game, exp, logger):
 
         for m in range(species_number):
             scale_step = (m + 1) * (init_scale / species_number)
-            scale_steps.append(scale_step)
+            scale_steps.append(scale_step*scale_step)
 
         for u in range(species_number):
             scale_idx = np.random.randint(0, species_number)
@@ -230,7 +231,8 @@ def evolve(game, exp, logger):
             new_net = Net(env.observation_space.shape, env.action_space.n)
             new_net.load_state_dict(top_children[i][0])
             logger.debug("device:{}".format(device))
-            p_reward = evaluate(env, new_net, device=device, evaluate_episodes=10)
+            logger.debug("new_net:{}".format(new_net))
+            p_reward = evaluate(env, new_net, device="cpu", evaluate_episodes=10)
             elite_c.append(p_reward)
             next_parents.append(new_net.cpu().state_dict())
 
