@@ -229,10 +229,11 @@ def evolve(game, exp, logger):
             new_net = Net(env.observation_space.shape, env.action_space.n)
             new_net.load_state_dict(top_children[i][0])
             p_reward, steps = evaluate(env, new_net, device="cpu", evaluate_episodes=10)
-            elite_c.append(p_reward)
+            elite_c.append((new_net.cpu().state_dict(), p_reward))
             next_parents.append(new_net.cpu().state_dict())
 
-        elite = copy.deepcopy(next_parents[elite_c.index(max(elite_c))])
+        elite_c.sort(key=lambda p: p[1], reverse=True)
+        elite = copy.deepcopy(elite_c[0])
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
 
