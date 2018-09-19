@@ -62,7 +62,7 @@ def make_env(game):
     return ptan.common.wrappers.wrap_dqn(gym.make(game))
 
 
-def evaluate(env_e, net, logger=None, device="cpu", evaluate_episodes=1):
+def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     obs = env_e.reset()
     reward = 0.0
     steps = 0
@@ -70,7 +70,7 @@ def evaluate(env_e, net, logger=None, device="cpu", evaluate_episodes=1):
     for _ in range(evaluate_episodes):
         while True:
             obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
-            logger.debug("obs_v:{}".format(obs_v))
+            print("obs_v:{}".format(obs_v))
             act_prob = net(obs_v).to(device)
             acts = act_prob.max(dim=1)[1]
             obs, r, done, _ = env_e.step(acts.data.cpu().numpy()[0])
@@ -230,7 +230,7 @@ def evolve(game, exp, logger):
             new_net = Net(env.observation_space.shape, env.action_space.n)
             new_net.load_state_dict(top_children[i][0])
             logger.debug("device:{}".format(device))
-            p_reward = evaluate(env, new_net, logger=logger, device=device, evaluate_episodes=10)
+            p_reward = evaluate(env, new_net, device=device, evaluate_episodes=10)
             elite_c.append(p_reward)
             next_parents.append(new_net.cpu().state_dict())
 
