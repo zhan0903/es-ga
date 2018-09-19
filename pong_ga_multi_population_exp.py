@@ -70,9 +70,7 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     for _ in range(evaluate_episodes):
         while True:
             obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
-            print("obs_v:{}".format(obs_v))
             act_prob = net(obs_v).to(device)
-
             acts = act_prob.max(dim=1)[1]
             obs, r, done, _ = env_e.step(acts.data.cpu().numpy()[0])
             reward += r
