@@ -229,6 +229,7 @@ def evolve(game, exp, logger):
             new_net = Net(env.observation_space.shape, env.action_space.n)
             new_net.load_state_dict(top_children[i][0])
             p_reward, steps = evaluate(env, new_net, device="cpu", evaluate_episodes=10)
+            all_frames = all_frames+steps
             elite_c.append((new_net.cpu().state_dict(), p_reward))
             next_parents.append(new_net.cpu().state_dict())
 
