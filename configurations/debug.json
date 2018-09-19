@@ -1,12 +1,12 @@
 {
-    "games": "AmidarNoFrameskip-v4",
+    "games": "PongNoFrameskip-v4",
     "species_number": 2,
-    "population_per_worker": 5,
+    "population_per_worker": 10,
     "parents_number": 2,
     "frames": "10000",
     "debug": 1,
     "init_scale": 0.8,
-    "comments": "9-11-simplified version; parents:random pick, shared; parallel: pool",
+    "comments": "9-19; parents:random pick, shared; parallel: pool",
     "all games for test":"PongNoFrameskip-v4,AmidarNoFrameskip-v4,AssaultNoFrameskip-v4,AsteroidsNoFrameskip-v4,AtlantisNoFrameskip-v4,EnduroNoFrameskip-v4,GravitarNoFrameskip-v4,SeaquestNoFrameskip-v4,ZaxxonNoFrameskip-v4"
 
 }

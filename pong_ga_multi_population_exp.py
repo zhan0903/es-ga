@@ -21,7 +21,6 @@ from tensorboardX import SummaryWriter
 
 
 MAX_SEED = 2**32 - 1
-parents_global = []
 # logger = logging.getLogger(__name__)
 # fh = logging.FileHandler('debug.log')
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -63,20 +62,23 @@ def make_env(game):
     return ptan.common.wrappers.wrap_dqn(gym.make(game))
 
 
-def evaluate(env_e, net, device="cpu"):
+def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     obs = env_e.reset()
     reward = 0.0
     steps = 0
-    while True:
-        obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
-        act_prob = net(obs_v).to(device)
-        acts = act_prob.max(dim=1)[1]
-        obs, r, done, _ = env_e.step(acts.data.cpu().numpy()[0])
-        reward += r
-        steps += 4
-        if done:
-            break
-    return reward, steps
+    rewards = []
+    for _ in range(evaluate_episodes):
+        while True:
+            obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
+            act_prob = net(obs_v).to(device)
+            acts = act_prob.max(dim=1)[1]
+            obs, r, done, _ = env_e.step(acts.data.cpu().numpy()[0])
+            reward += r
+            steps += 4
+            if done:
+                rewards.append(reward)
+                break
+    return np.mean(rewards), steps
 
 
 def mutate_net(env_m, p_net, seed, noise_std, device):
@@ -206,7 +208,7 @@ def evolve(game, exp, logger):
         if elite is not None:
             top_children.append(elite)
         top_children.sort(key=lambda p: p[1], reverse=True)
-        elite = copy.deepcopy(top_children[0])
+        # elite = copy.deepcopy(top_children[0])
         top_rewards = [p[1] for p in top_children]
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
@@ -222,11 +224,15 @@ def evolve(game, exp, logger):
                      gen_idx, reward_mean, reward_max, reward_std, speed, init_scale, total_time))
 
         next_parents = []
+        elite_c = []
         for i in range(parents_number):
             new_net = Net(env.observation_space.shape, env.action_space.n)
             new_net.load_state_dict(top_children[i][0])
+            p_reward = evaluate(env, new_net, device, evaluate_episodes=10)
+            elite_c.append(p_reward)
             next_parents.append(new_net.cpu().state_dict())
 
+        elite = copy.deepcopy(next_parents[elite_c.index(max(elite_c))])
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
 
