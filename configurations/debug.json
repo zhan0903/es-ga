@@ -1,9 +1,9 @@
 {
     "games": "PongNoFrameskip-v4",
-    "species_number": 2,
-    "population_per_worker": 5,
-    "parents_number": 2,
-    "frames": "10000",
+    "species_number": 10,
+    "population_per_worker": 60,
+    "parents_number": 10,
+    "frames": "1000000",
     "debug": 1,
     "init_scale": 0.8,
     "comments": "9-19; parents:random pick, shared; parallel: pool",

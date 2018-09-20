@@ -16,8 +16,10 @@ import torch.nn as nn
 import multiprocessing as mp
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
+from functools import wraps
 
 from tensorboardX import SummaryWriter
+from contextlib import contextmanager
 
 
 MAX_SEED = 2**32 - 1
@@ -26,6 +28,17 @@ MAX_SEED = 2**32 - 1
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # fh.setFormatter(formatter)
 # logger.addHandler(fh)
+
+
+def timethis(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        r = func(*args, **kwargs)
+        end = time.perf_counter()
+        print('{}.{} : {}'.format(func.__module__, func.__name__, end - start))
+        return r
+    return wrapper
 
 
 class Net(nn.Module):
@@ -62,6 +75,7 @@ def make_env(game):
     return ptan.common.wrappers.wrap_dqn(gym.make(game))
 
 
+@timethis
 def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     obs = env_e.reset()
     reward = 0.0
@@ -81,6 +95,7 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     return np.mean(rewards), steps
 
 
+@timethis
 def mutate_net(env_m, p_net, seed, noise_std, device):
     new_net_m = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
     new_net_m.load_state_dict(p_net)
@@ -95,6 +110,7 @@ def mutate_net(env_m, p_net, seed, noise_std, device):
 OutputItem = collections.namedtuple('OutputItem', field_names=['top_children_p', 'frames'])
 
 
+@timethis
 def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     scale_step_w = input_w[0]
     device_w = input_w[1]
@@ -129,6 +145,16 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
         top_children_w.append(child[k])
 
     return OutputItem(top_children_p=top_children_w, frames=frames)
+
+
+@contextmanager
+def timeblock(label):
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        end = time.perf_counter()
+        print('{} : {}'.format(label, end - start))
 
 
 def evolve(game, exp, logger):
@@ -225,16 +251,21 @@ def evolve(game, exp, logger):
 
         next_parents = []
         elite_c = []
-        for i in range(parents_number):
-            new_net = Net(env.observation_space.shape, env.action_space.n)
-            new_net.load_state_dict(top_children[i][0])
-            p_reward, steps = evaluate(env, new_net, device="cpu", evaluate_episodes=10)
-            all_frames = all_frames+steps
-            elite_c.append((new_net.cpu().state_dict(), p_reward))
-            next_parents.append(new_net.cpu().state_dict())
+        with timeblock('counting'):
+            for i in range(parents_number):
+                new_net = Net(env.observation_space.shape, env.action_space.n)
+                new_net.load_state_dict(top_children[i][0])
+                p_reward, steps = evaluate(env, new_net, device="cpu", evaluate_episodes=10)
+                all_frames = all_frames+steps
+                elite_c.append((new_net.cpu().state_dict(), p_reward))
+                next_parents.append(new_net.cpu().state_dict())
 
         elite_c.sort(key=lambda p: p[1], reverse=True)
         elite = copy.deepcopy(elite_c[0])
+        logger.debug("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
+                                                                                     top_children[1][1]))
+        logger.debug("next_parents[0]:{0},next_parents[1]:{1}".format(next_parents[0]['fc.2.bias'],
+                                                                      next_parents[1]['fc.2.bias']))
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
 
