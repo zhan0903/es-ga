@@ -1,5 +1,5 @@
 {
-    "games": "AmidarNoFrameskip-v4",
+    "games": "PongNoFrameskip-v4",
     "species_number": 10,
     "population_per_worker": 60,
     "parents_number": 10,
