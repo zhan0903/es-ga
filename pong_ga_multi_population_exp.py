@@ -248,7 +248,7 @@ def evolve(game, exp, logger):
 
         next_parents = []
         for i in range(parents_number):
-            new_net = Net(env.observation_space.shape, env.action_space.n).to(device)
+            new_net = Net(env.observation_space.shape, env.action_space.n)
             new_net.load_state_dict(top_children[i][0])
             # p_reward, steps = evaluate(env, new_net, device=device, evaluate_episodes=10)
             # all_frames = all_frames+steps
