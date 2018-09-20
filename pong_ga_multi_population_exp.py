@@ -75,7 +75,6 @@ def make_env(game):
     return ptan.common.wrappers.wrap_dqn(gym.make(game))
 
 
-@timethis
 def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     obs = env_e.reset()
     reward = 0.0
@@ -95,7 +94,6 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     return np.mean(rewards), steps
 
 
-@timethis
 def mutate_net(env_m, p_net, seed, noise_std, device):
     new_net_m = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
     new_net_m.load_state_dict(p_net)
@@ -110,7 +108,6 @@ def mutate_net(env_m, p_net, seed, noise_std, device):
 OutputItem = collections.namedtuple('OutputItem', field_names=['top_children_p', 'frames'])
 
 
-@timethis
 def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
     scale_step_w = input_w[0]
     device_w = input_w[1]
@@ -251,14 +248,14 @@ def evolve(game, exp, logger):
 
         next_parents = []
         elite_c = []
-        with timeblock('counting'):
-            for i in range(parents_number):
-                new_net = Net(env.observation_space.shape, env.action_space.n)
-                new_net.load_state_dict(top_children[i][0])
-                p_reward, steps = evaluate(env, new_net, device="cpu", evaluate_episodes=10)
-                all_frames = all_frames+steps
-                elite_c.append((new_net.cpu().state_dict(), p_reward))
-                next_parents.append(new_net.cpu().state_dict())
+
+        for i in range(parents_number):
+            new_net = Net(env.observation_space.shape, env.action_space.n)
+            new_net.load_state_dict(top_children[i][0])
+            p_reward, steps = evaluate(env, new_net, device="cpu", evaluate_episodes=10)
+            all_frames = all_frames+steps
+            elite_c.append((new_net.cpu().state_dict(), p_reward))
+            next_parents.append(new_net.cpu().state_dict())
 
         elite_c.sort(key=lambda p: p[1], reverse=True)
         elite = copy.deepcopy(elite_c[0])
