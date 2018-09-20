@@ -76,11 +76,11 @@ def make_env(game):
 
 
 def evaluate(env_e, net, device="cpu", evaluate_episodes=3):
-    obs = env_e.reset()
-    reward = 0.0
     steps = 0
     rewards = []
     for _ in range(evaluate_episodes):
+        obs = env_e.reset()
+        reward = 0.0
         while True:
             obs_v = torch.FloatTensor([np.array(obs, copy=False)]).to(device)
             act_prob = net(obs_v).to(device)
