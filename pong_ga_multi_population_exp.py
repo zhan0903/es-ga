@@ -231,7 +231,7 @@ def evolve(game, exp, logger):
         if elite is not None:
             top_children.append(elite)
         top_children.sort(key=lambda p: p[1], reverse=True)
-        # elite = copy.deepcopy(top_children[0])
+        elite = copy.deepcopy(top_children[0])
         top_rewards = [p[1] for p in top_children]
         reward_mean = np.mean(top_rewards)
         reward_max = np.max(top_rewards)
@@ -247,20 +247,18 @@ def evolve(game, exp, logger):
                      gen_idx, reward_mean, reward_max, reward_std, speed, init_scale, total_time))
 
         next_parents = []
-        elite_c = []
-        for i in range(len(top_children)):
+        for i in range(parents_number):
             new_net = Net(env.observation_space.shape, env.action_space.n).to(device)
             new_net.load_state_dict(top_children[i][0])
-            p_reward, steps = evaluate(env, new_net, device=device, evaluate_episodes=10)
-            all_frames = all_frames+steps
-            elite_c.append((new_net.cpu().state_dict(), p_reward))
-            # next_parents.append(new_net.cpu().state_dict())
-        elite_c.sort(key=lambda p: p[1], reverse=True)
-        elite = copy.deepcopy(elite_c[0])
-        for j in range(parents_number):
-            next_parents.append(elite_c[j][0])
+            # p_reward, steps = evaluate(env, new_net, device=device, evaluate_episodes=10)
+            # all_frames = all_frames+steps
+            # elite_c.append((new_net.cpu().state_dict(), p_reward))
+            next_parents.append(new_net.cpu().state_dict())
+        # elite_c.sort(key=lambda p: p[1], reverse=True)
+        # elite = copy.deepcopy(elite_c[0])
+        # for j in range(parents_number):
+        #     next_parents.append(elite_c[j][0])
 
-        logger.debug("top elite_c:{}".format(elite_c[0][1]))
         logger.debug("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
                                                                                      top_children[1][1]))
         logger.debug("next_parents[0]:{0},next_parents[1]:{1}".format(next_parents[0]['fc.2.bias'],
