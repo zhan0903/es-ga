@@ -75,7 +75,7 @@ def make_env(game):
     return ptan.common.wrappers.wrap_dqn(gym.make(game))
 
 
-def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
+def evaluate(env_e, net, device="cpu", evaluate_episodes=3):
     obs = env_e.reset()
     reward = 0.0
     steps = 0
