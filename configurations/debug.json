@@ -6,7 +6,7 @@
     "frames": "1000000",
     "debug": 1,
     "init_scale": 0.8,
-    "comments": "9-19; parents:random pick, shared; parallel: pool; elite: average 10 rounds",
+    "comments": "9-19; parents:random pick, shared; parallel: pool; elite: average 10 rounds for all top children",
     "all games for test":"PongNoFrameskip-v4,AmidarNoFrameskip-v4,AssaultNoFrameskip-v4,AsteroidsNoFrameskip-v4,AtlantisNoFrameskip-v4,EnduroNoFrameskip-v4,GravitarNoFrameskip-v4,SeaquestNoFrameskip-v4,ZaxxonNoFrameskip-v4"
 
 }
