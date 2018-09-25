@@ -191,7 +191,7 @@ def evolve(game, exp, logger):
         seed = np.random.randint(MAX_SEED)
         torch.manual_seed(seed)
         share_parent = Net(env.observation_space.shape, env.action_space.n)
-        print("model.parameter.numbers:{}".format(sum([p.numel() for p in share_parent.parameters()])))
+        # print("model.parameter.numbers:{}".format(sum([p.numel() for p in share_parent.parameters()])))
         share_parents.append(share_parent.state_dict())
 
     with open(r"my_trainer_objects.pkl", "wb") as output_file:
