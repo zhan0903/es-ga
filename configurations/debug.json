@@ -1,7 +1,7 @@
 {
     "games": "PongNoFrameskip-v4",
     "species_number": 10,
-    "population_per_worker": 60,
+    "population_per_worker": 50,
     "parents_number": 10,
     "frames": "100000000",
     "debug": 1,
