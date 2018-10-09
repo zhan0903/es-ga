@@ -97,8 +97,10 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
 def mutate_net(env_m, p_net, seed, noise_std, device):
     new_net_m = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
     new_net_m.load_state_dict(p_net)
-    np.random.seed(seed)
+    # np.random.seed(seed)
     for p in new_net_m.parameters():
+        np.random.seed(seed)
+
         noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
         p.data += noise_std * noise_t
     return new_net_m
