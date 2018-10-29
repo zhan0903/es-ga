@@ -266,7 +266,7 @@ def evolve(game, exp, logger):
         # evaluate best policy for 10 times
         test_best_net = Net(env.observation_space.shape, env.action_space.n)
         test_best_net.load_state_dict(next_parents[0])
-        reward, steps = evaluate(env, test_best_net, devices[0], evaluate_episodes=10)
+        reward, steps = evaluate(env, test_best_net, evaluate_episodes=10)
         logger.debug("best policy average value:{}".format(reward))
 
 
