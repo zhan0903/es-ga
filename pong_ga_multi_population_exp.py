@@ -100,7 +100,6 @@ def mutate_net(env_m, p_net, seed, noise_std, device):
     np.random.seed(seed)
     for p in new_net_m.parameters():
         # np.random.seed(seed)
-
         noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
         p.data += noise_std * noise_t
     return new_net_m
@@ -261,6 +260,13 @@ def evolve(game, exp, logger):
         # elite = copy.deepcopy(elite_c[0])
         # for j in range(parents_number):
         #     next_parents.append(elite_c[j][0])
+
+        # evaluate best policy for 10 times
+        test_best_net = Net(env.observation_space.shape, env.action_space.n)
+        test_best_net.load_state_dict(next_parents[0])
+        reward, steps = evaluate(env, test_best_net, devices[0], evaluate_episodes=10)
+        logger.debug("best policy average value:{}".format(reward))
+
 
         logger.debug("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
                                                                                      top_children[1][1]))
