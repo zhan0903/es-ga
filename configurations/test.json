@@ -1,5 +1,5 @@
 {
-    "games": "PongNoFrameskip-v4",
+    "games": "GravitarNoFrameskip-v4",
     "species_number": 10,
     "population_per_worker": 100,
     "parents_number": 20,
