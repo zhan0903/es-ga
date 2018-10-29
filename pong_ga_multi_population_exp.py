@@ -94,14 +94,14 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
     return np.mean(rewards), steps
 
 
-def mutate_net(env_m, p_net, seed, noise_std, device):
+def mutate_net(env_m, p_net, seed, scale_step, device):
     new_net_m = Net(env_m.observation_space.shape, env_m.action_space.n).to(device)
     new_net_m.load_state_dict(p_net)
     np.random.seed(seed)
     for p in new_net_m.parameters():
         # np.random.seed(seed)
-        noise_t = torch.tensor(np.random.normal(size=p.data.size()).astype(np.float32)).to(device)
-        p.data += noise_std * noise_t
+        noise_t = torch.tensor(np.random.normal(scale=scale_step, size=p.data.size()).astype(np.float32)).to(device)
+        p.data += 0.002 * noise_t # noise_std - > 0.002
     return new_net_m
 
 
@@ -129,10 +129,10 @@ def worker_func(input_w):  # pro, scale_step_w, device_w="cpu"):
 
     # noise_step = np.random.normal(scale=scale_step_w)
     for _ in range(population_per_worker_w):
-        noise_step = np.random.normal(scale=scale_step_w)
+        # noise_step = np.random.normal(scale=scale_step_w)
         parent = np.random.randint(0, len(parents_w))
         child_seed = np.random.randint(MAX_SEED)
-        child_net = mutate_net(env_w, parents_w[parent], child_seed, noise_step, device_w)
+        child_net = mutate_net(env_w, parents_w[parent], child_seed, scale_step_w, device_w)
         reward, steps = evaluate(env_w, child_net, device_w)
         batch_steps_w += steps
         child.append((child_net.state_dict(), reward))
@@ -203,13 +203,15 @@ def evolve(game, exp, logger):
         scale_steps = []
         t_start = time.time()
 
-        for m in range(species_number):
-            scale_step = (m + 1) * (init_scale / species_number)
-            scale_steps.append(scale_step)
+        # for m in range(species_number):
+        #     scale_step = (m + 1) * (init_scale / species_number)
+        #     scale_steps.append(scale_step)
 
         for u in range(species_number):
-            scale_idx = np.random.randint(0, species_number)
-            scale_step = scale_steps[scale_idx]
+            # scale_idx = np.random.randint(0, species_number)
+            # scale_step = scale_steps[scale_idx]
+            scale_step = (u+1)*0.5
+            logger.debug("in evolve:scale_step:{}".format(scale_step))
             if gpu_number == 0:
                 device = "cpu"
             else:
