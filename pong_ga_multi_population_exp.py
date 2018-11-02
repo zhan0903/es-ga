@@ -267,12 +267,15 @@ def evolve(game, exp, logger):
         test_best_net = Net(env.observation_space.shape, env.action_space.n)
         test_best_net.load_state_dict(next_parents[0])
 
-        reward, steps = evaluate(env, test_best_net, evaluate_episodes=20)
+        reward, steps = evaluate(env, test_best_net, evaluate_episodes=200)
+        writer.add_scalar("best_agent", reward, all_frames)
+
         logger.info("best policy average value:{}".format(reward))
-        logger.debug("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
+        logger.info("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
                                                                                      top_children[1][1]))
-        logger.debug("next_parents[0]:{0},next_parents[1]:{1}".format(next_parents[0]['fc.2.bias'],
+        logger.info("next_parents[0]:{0},next_parents[1]:{1}".format(next_parents[0]['fc.2.bias'],
                                                                       next_parents[1]['fc.2.bias']))
+        logger.info("all_frames:{}".format(all_frames))
         with open(r"my_trainer_objects.pkl", "wb") as output_file:
             pickle.dump(next_parents, output_file, True)
 
