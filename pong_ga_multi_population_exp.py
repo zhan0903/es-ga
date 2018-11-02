@@ -178,6 +178,8 @@ def evolve(game, exp, logger):
     reward_max_last = None
     elite = None
     all_frames = 0
+    best_agent = None
+    best_average_reward = float('-inf')
 
     gpu_number = torch.cuda.device_count()
     if gpu_number >= 1:
@@ -263,14 +265,18 @@ def evolve(game, exp, logger):
         # for j in range(parents_number):
         #     next_parents.append(elite_c[j][0])
 
-        # evaluate best policy for 10 times
-        test_best_net = Net(env.observation_space.shape, env.action_space.n)
-        test_best_net.load_state_dict(next_parents[0])
+        # evaluate top 5 best parents for 10 times
+        for i in range(5):
+            test_best_net = Net(env.observation_space.shape, env.action_space.n)
+            test_best_net.load_state_dict(next_parents[i])
+            reward, steps = evaluate(env, test_best_net, evaluate_episodes=100)
+            # writer.add_scalar("best_agent %s" % i, reward, all_frames)
+            if reward > best_average_reward:
+                # best_agent = copy.deepcopy(next_parents[i])
+                best_average_reward = reward
 
-        reward, steps = evaluate(env, test_best_net, evaluate_episodes=100)
-        writer.add_scalar("best_agent", reward, all_frames)
-
-        logger.info("best policy average value:{}".format(reward))
+        writer.add_scalar("best_agent_score", reward, all_frames)
+        logger.info("best agent average value:{}".format(best_average_reward))
         logger.info("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
                                                                                      top_children[1][1]))
         logger.info("next_parents[0]:{0},next_parents[1]:{1}".format(next_parents[0]['fc.2.bias'],
