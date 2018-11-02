@@ -267,7 +267,7 @@ def evolve(game, exp, logger):
         test_best_net = Net(env.observation_space.shape, env.action_space.n)
         test_best_net.load_state_dict(next_parents[0])
 
-        reward, steps = evaluate(env, test_best_net, evaluate_episodes=200)
+        reward, steps = evaluate(env, test_best_net, evaluate_episodes=100)
         writer.add_scalar("best_agent", reward, all_frames)
 
         logger.info("best policy average value:{}".format(reward))
