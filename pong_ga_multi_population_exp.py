@@ -210,7 +210,7 @@ def evolve(game, exp, logger):
         for u in range(species_number):
             # scale_idx = np.random.randint(0, species_number)
             # scale_step = scale_steps[scale_idx]
-            scale_step = (u+1)*0.5
+            scale_step = (u+1)*0.3
             logger.debug("in evolve:scale_step:{}".format(scale_step))
             if gpu_number == 0:
                 device = "cpu"
@@ -266,9 +266,9 @@ def evolve(game, exp, logger):
         # evaluate best policy for 10 times
         test_best_net = Net(env.observation_space.shape, env.action_space.n)
         test_best_net.load_state_dict(next_parents[0])
+
         reward, steps = evaluate(env, test_best_net, evaluate_episodes=20)
         logger.info("best policy average value:{}".format(reward))
-
         logger.debug("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
                                                                                      top_children[1][1]))
         logger.debug("next_parents[0]:{0},next_parents[1]:{1}".format(next_parents[0]['fc.2.bias'],
