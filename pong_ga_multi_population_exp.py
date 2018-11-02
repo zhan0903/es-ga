@@ -275,7 +275,7 @@ def evolve(game, exp, logger):
                 # best_agent = copy.deepcopy(next_parents[i])
                 best_average_reward = reward
 
-        writer.add_scalar("best_agent_score", reward, all_frames)
+        writer.add_scalar("best_agent_score", best_average_reward, all_frames)
         logger.info("best agent average value:{}".format(best_average_reward))
         logger.info("top_children[0] reward:{0}, top_children[1] reward:{1}".format(top_children[0][1],
                                                                                      top_children[1][1]))
