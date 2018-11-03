@@ -178,7 +178,7 @@ def evolve(game, exp, logger):
     reward_max_last = None
     elite = None
     all_frames = 0
-    best_agent = None
+    # best_agent = None
     best_average_reward = float('-inf')
 
     gpu_number = torch.cuda.device_count()
@@ -270,6 +270,7 @@ def evolve(game, exp, logger):
             test_best_net = Net(env.observation_space.shape, env.action_space.n)
             test_best_net.load_state_dict(next_parents[i])
             reward, steps = evaluate(env, test_best_net, evaluate_episodes=100)
+            all_frames += steps
             # writer.add_scalar("best_agent %s" % i, reward, all_frames)
             if reward > best_average_reward:
                 # best_agent = copy.deepcopy(next_parents[i])
