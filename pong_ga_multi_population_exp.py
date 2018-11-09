@@ -88,6 +88,9 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
                 if isinstance(p, nn.Linear):
                     bias_data = p.bias.data
 
+            print("bias_data mean in evaluate:", bias_data.mean())
+            print("act_prob mean in evaluate:", act_prob.mean())
+
             assert bias_data.mean() == act_prob.mean()
 
             # print("act_prob in evaluate:", act_prob)
