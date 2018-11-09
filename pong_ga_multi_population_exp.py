@@ -86,10 +86,13 @@ def evaluate(env_e, net, device="cpu", evaluate_episodes=1):
             act_prob = net(obs_v).to(device)
             for p in net.modules():
                 if isinstance(p, nn.Linear):
+                    weight_data = p.weight.data
                     bias_data = p.bias.data
 
             print("bias_data mean in evaluate:", bias_data.mean())
             print("act_prob mean in evaluate:", act_prob.mean())
+            print("weight_data mean in evaluate:", weight_data.mean())
+
 
             assert bias_data.mean() == act_prob.mean()
 
